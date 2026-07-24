@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!-- saved from url=(0040)https://numberblocksforhasung.pages.dev/ -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>넘버블록스 수학 놀이터 (Numberblocks Math Playground)</title>
+    <!-- Google Fonts: Fredoka One (귀여운 볼드 폰트) & Gowun Dodum (깔끔한 한글 폰트) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link href="./넘버블록스 수학 놀이터 (Numberblocks Math Playground)_files/css2" rel="stylesheet">
+    <link rel="stylesheet" href="./넘버블록스 수학 놀이터 (Numberblocks Math Playground)_files/style.css">
+</head>
+<body>
+    <!-- 0. 보호자 비밀번호 잠금 화면 -->
+    <div id="screen-lock" class="lock-screen">
+        <div class="lock-box">
+            <div class="lock-icon">🔒</div>
+            <h2>보호자 확인</h2>
+            <p>비밀번호 4자리를 입력해 주세요.</p>
+            <div class="password-display">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="keypad">
+                <button class="key-btn" data-key="1">1</button>
+                <button class="key-btn" data-key="2">2</button>
+                <button class="key-btn" data-key="3">3</button>
+                <button class="key-btn" data-key="4">4</button>
+                <button class="key-btn" data-key="5">5</button>
+                <button class="key-btn" data-key="6">6</button>
+                <button class="key-btn" data-key="7">7</button>
+                <button class="key-btn" data-key="8">8</button>
+                <button class="key-btn" data-key="9">9</button>
+                <button class="key-btn key-clear" data-key="C">지우기</button>
+                <button class="key-btn" data-key="0">0</button>
+                <button class="key-btn key-ok" id="btn-lock-submit" data-key="OK">입력</button>
+            </div>
+            <p id="lock-error-msg" class="error-msg hidden">⚠️ 비밀번호가 일치하지 않아요!</p>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <!-- 1. 헤더 영역 -->
+        <header>
+            <div class="logo" id="btn-logo">
+                <span class="logo-text-eng">Numberblocks</span>
+                <span class="logo-text-kor">수학 놀이터</span>
+            </div>
+            <div class="header-controls">
+                <div class="volume-control-wrapper">
+                    <button id="btn-sound-toggle" class="icon-btn" aria-label="음향 켜기/끄기">🔊</button>
+                    <div class="volume-slider-container">
+                        <span class="volume-icon">🎵</span>
+                        <input type="range" id="bgm-volume-slider" min="0" max="100" value="50" class="volume-slider" aria-label="배경음악 볼륨 조절" title="배경음악 볼륨 조절">
+                    </div>
+                </div>
+                <button id="btn-home" class="home-btn hidden">🏠 홈으로</button>
+            </div>
+        </header>
+
+        <!-- 2. 메인 컨텐츠 영역 -->
+        <main>
+            <!-- 2-A. 홈 화면 (모드 선택) -->
+            <section id="screen-home" class="screen">
+                <h1 class="main-title">숫자랑 재미있게 놀아볼까요?</h1>
+                <p class="main-subtitle">원하는 놀이를 터치해 보세요!</p>
+                <div class="menu-grid">
+                    <div class="menu-card card-sandbox" id="menu-sandbox">
+                        <div class="card-icon">🪵</div>
+                        <h2>자유 놀이터</h2>
+                        <p>블록을 꺼내서 합쳐보고 쪼개봐요!</p>
+                    </div>
+                    <div class="menu-card card-adventure" id="menu-adventure">
+                        <div class="card-icon">➕</div>
+                        <h2>더하기 빼기 모험</h2>
+                        <p>넘버블록스 친구들과 수학 퀴즈를 풀어요!</p>
+                    </div>
+                    <div class="menu-card card-tracing" id="menu-tracing">
+                        <div class="card-icon">✍️</div>
+                        <h2>숫자 쓰기 연습</h2>
+                        <p>터치 펜이나 손가락으로 숫자를 따라 써봐요!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-B. 자유 놀이터 화면 -->
+            <section id="screen-sandbox" class="screen hidden">
+                <div class="game-header">
+                    <h2>🪵 자유 놀이터</h2>
+                    <p class="hint-text">블록을 드래그해서 합치고, 더블클릭하면 쪼개져요!</p>
+                    <button class="clear-btn" id="btn-clear-sandbox">♻️ 모두 비우기</button>
+                </div>
+                <!-- 칠판을 좌우 가로 스크롤할 수 있도록 감싸는 래퍼 -->
+                <div class="sandbox-board-wrapper">
+                    <div class="play-zone" id="sandbox-playzone">
+                        <!-- 드래그 앤 드롭되는 블록들이 동적으로 들어감 -->
+                    </div>
+                </div>
+                <div class="block-spawner">
+                    <p class="spawn-title">블록 소환하기 🧚</p>
+                    <div class="spawner-buttons">
+                        <button class="spawn-btn num-1" data-num="1">1</button>
+                        <button class="spawn-btn num-2" data-num="2">2</button>
+                        <button class="spawn-btn num-3" data-num="3">3</button>
+                        <button class="spawn-btn num-4" data-num="4">4</button>
+                        <button class="spawn-btn num-5" data-num="5">5</button>
+                        <button class="spawn-btn num-6" data-num="6">6</button>
+                        <button class="spawn-btn num-7" data-num="7">7</button>
+                        <button class="spawn-btn num-8" data-num="8">8</button>
+                        <button class="spawn-btn num-9" data-num="9">9</button>
+                        <button class="spawn-btn num-10" data-num="10">10</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-C. 더하기 빼기 모험 화면 (4지선다형 & 난이도 선택 추가) -->
+            <section id="screen-adventure" class="screen hidden">
+                <!-- 1. 난이도 선택 메뉴 화면 -->
+                <div id="adventure-selector-screen" class="adventure-selector-screen">
+                    <h2>🗺️ 수학 모험 난이도 선택</h2>
+                    <p class="selector-desc">도전하고 싶은 단계를 선택해 주세요! 🌱</p>
+                    
+                    <div class="difficulty-grid">
+                        <button class="diff-btn" data-start-stage="1">
+                            <span class="diff-title">1단계 🌱</span>
+                            <span class="diff-info">기초 덧셈/뺄셈 (10 이하)</span>
+                        </button>
+                        <button class="diff-btn" data-start-stage="11">
+                            <span class="diff-title">2단계 🌟</span>
+                            <span class="diff-info">10보다 큰 수 (20 이하)</span>
+                        </button>
+                        <button class="diff-btn" data-start-stage="21">
+                            <span class="diff-title">3단계 🔥</span>
+                            <span class="diff-info">고급 연산 (30 이하)</span>
+                        </button>
+                        <button class="diff-btn" data-start-stage="31">
+                            <span class="diff-title">4단계 👑</span>
+                            <span class="diff-info">마스터 격자 연산 (40 이하)</span>
+                        </button>
+                        <button class="diff-btn" data-start-stage="41">
+                            <span class="diff-title">5단계 💎</span>
+                            <span class="diff-info">초고수 완전 마스터 (50 이하)</span>
+                        </button>
+                    </div>
+                    
+                    <button class="selector-back-btn" onclick="switchMode('home')">메인 홈으로 🏠</button>
+                </div>
+
+                <!-- 2. 실제 게임 플레이 영역 (처음엔 숨김) -->
+                <div id="adventure-game-playzone" class="adventure-game-playzone hidden">
+                    <div class="game-header">
+                        <div class="header-left-group">
+                            <button class="header-back-btn" id="adventure-to-selector-btn">⬅️ 단계 선택</button>
+                            <h2>➕ 더하기 빼기 모험</h2>
+                        </div>
+                        <div class="score-board">스테이지 <span id="adventure-stage">1</span>/50</div>
+                    </div>
+                    
+                    <div class="adventure-main-new">
+                        <!-- 수식 표시판 -->
+                        <div class="quiz-equation" id="quiz-equation">7 + 3 = ?</div>
+                        
+                        <!-- 보조 숫자 블록 힌트 영역 (드래그하지 않고 눈으로 세어보는 영역) -->
+                        <div class="quiz-visual-new" id="quiz-visual-zone-new">
+                            <!-- 여기에 7 블록과 3 블록 등이 배치됨 -->
+                        </div>
+                        
+                        <!-- 4지선다형 객관식 보기 영역 -->
+                        <div class="choices-container" id="quiz-choices">
+                            <!-- 동적으로 4개의 보기 버튼이 생성됨 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 정답 축하 스페셜 말풍선 오버레이 레이어 -->
+                <div id="adventure-success-feedback" class="adventure-feedback-layer hidden">
+                    <div class="feedback-content">
+                        <div class="feedback-bubble" id="feedback-bubble-text">잘했어, 하성아! 🎉</div>
+                        <div id="feedback-block-display" class="feedback-block-display"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-D. 숫자 쓰기 연습 화면 (터치 펜 최적화) -->
+            <section id="screen-tracing" class="screen hidden">
+                <div class="game-header">
+                    <h2>✍️ 숫자 쓰기 연습</h2>
+                    <p class="hint-text">터치 펜이나 손가락으로 가이드 선을 따라 숫자를 써 보세요!</p>
+                </div>
+                <div class="tracing-layout">
+                    <!-- 숫자 선택 사이드바 -->
+                    <div class="number-selector">
+                        <button class="num-select-btn active" data-num="1">1</button>
+                        <button class="num-select-btn" data-num="2">2</button>
+                        <button class="num-select-btn" data-num="3">3</button>
+                        <button class="num-select-btn" data-num="4">4</button>
+                        <button class="num-select-btn" data-num="5">5</button>
+                        <button class="num-select-btn" data-num="6">6</button>
+                        <button class="num-select-btn" data-num="7">7</button>
+                        <button class="num-select-btn" data-num="8">8</button>
+                        <button class="num-select-btn" data-num="9">9</button>
+                        <button class="num-select-btn" data-num="10">10</button>
+                    </div>
+                    
+                    <!-- 쓰기 캔버스 영역 -->
+                    <div class="canvas-container">
+                        <canvas id="tracing-canvas" width="500" height="500"></canvas>
+                        <!-- 터치 효과나 로딩 안내 등의 레이어 -->
+                        <div id="tracing-feedback" class="hidden">참 잘했어요! 🎉</div>
+                    </div>
+
+                    <!-- 캐릭터 보상 애니메이션 영역 -->
+                    <div class="tracing-reward" id="tracing-reward-zone">
+                        <div class="reward-placeholder">숫자를 예쁘게 쓰면 넘버블록 친구가 나타나요! ✨</div>
+                    </div>
+                </div>
+                <!-- 🧼 다시 쓰기 버튼은 자동 획 리셋 엔진 탑재로 불필요하여 공간 절약을 위해 제거 완료 -->
+            </section>
+        </main>
+
+        <!-- 3. 푸터 / 팝업 효과음 및 성공 모달 -->
+        <div id="modal-success" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="modal-title">🎉 대단해요! 🎉</h2>
+                <div id="modal-reward-character"></div>
+                <p id="modal-text">정답을 맞췄습니다!</p>
+                <button id="modal-next-btn">다음으로 가기 ➔</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 토스트 메시지용 컨테이너 -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- 5. 폭죽 애니메이션용 캔버스 (마우스 투과, 풀스크린 고정) -->
+    <canvas id="confetti-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 99999;" width="1920" height="911"></canvas>
+
+    <script src="./넘버블록스 수학 놀이터 (Numberblocks Math Playground)_files/game.js.다운로드"></script>
+
+
+</body></html>
