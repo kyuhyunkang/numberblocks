@@ -1,0 +1,2193 @@
+/* ----------------------------------------------------
+   🎨 넘버블록스 수학 놀이터 - 스타일시트 (style.css)
+---------------------------------------------------- */
+
+:root {
+    --font-primary: 'Gowun Dodum', sans-serif;
+    --font-accent: 'Fredoka', sans-serif;
+
+    /* 캐릭터 대표 컬러 */
+    --color-num1: #ff3b30;
+    --color-num2: #ff9500;
+    --color-num3: #ffcc00;
+    --color-num4: #4cd964;
+    --color-num5: #5ac8fa;
+    --color-num6: #5856d6;
+    --color-num7: #ff2d55;
+    --color-num8: #af52de;
+    --color-num9: #8e8e93;
+    --color-num10: #ffffff;
+
+    /* 배경 및 시스템 컬러 */
+    --bg-app: #eef7ff;
+    --bg-card: #ffffff;
+    --text-dark: #333333;
+    --text-light: #ffffff;
+    --shadow-soft: 0 10px 30px rgba(0,0,0,0.08);
+    --shadow-strong: 0 15px 40px rgba(0,0,0,0.15);
+    
+    /* 그리드 및 단위 크기 */
+    --block-unit: 50px; /* 블록 한 칸의 가로/세로 기본 크기 */
+}
+
+/* 초기화 및 공통 스타일 */
+.hidden {
+    display: none !important;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    font-family: var(--font-primary);
+    background-color: var(--bg-app);
+    color: var(--text-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 전체 컨테이너 */
+#app-container {
+    width: 95%;
+    max-width: 1280px;
+    height: 92vh;
+    max-height: 900px;
+    background: radial-gradient(circle, #f7fdff 0%, #dcf0ff 100%);
+    box-shadow: var(--shadow-strong);
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    border: 8px solid #ffffff;
+}
+
+/* 1. 헤더 스타일 */
+header {
+    height: 80px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    border-bottom: 3px dashed #b5e2ff;
+    z-index: 10;
+}
+
+.logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.logo-text-eng {
+    font-family: var(--font-accent);
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(45deg, var(--color-num1), var(--color-num3), var(--color-num5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-text-kor {
+    font-size: 20px;
+    font-weight: 700;
+    color: #4a5568;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* 귀여운 버튼 기본 스타일 */
+button {
+    cursor: pointer;
+    font-family: var(--font-primary);
+    border: none;
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+button:active {
+    transform: scale(0.92);
+}
+
+.icon-btn {
+    font-size: 24px;
+    background: transparent;
+    padding: 5px;
+}
+
+.home-btn {
+    background: linear-gradient(135deg, #ff9500 0%, #ff5e3a 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(255,149,0,0.3);
+}
+
+.home-btn.hidden {
+    display: none;
+}
+
+/* 2. 메인 컨텐츠 및 화면 제어 */
+main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1;
+}
+
+.screen.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 2-A. 홈 화면 */
+#screen-home {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.main-title {
+    font-size: 36px;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.main-subtitle {
+    font-size: 18px;
+    color: #7f8c8d;
+    margin-bottom: 40px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    width: 100%;
+    max-width: 900px;
+}
+
+.menu-card {
+    background: var(--bg-card);
+    border-radius: 24px;
+    padding: 35px 20px;
+    box-shadow: var(--shadow-soft);
+    border: 4px solid #ffffff;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-card:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: var(--shadow-strong);
+}
+
+.card-icon {
+    font-size: 64px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f0f7ff;
+    transition: transform 0.4s ease;
+}
+
+.menu-card:hover .card-icon {
+    transform: rotate(15deg) scale(1.1);
+}
+
+.card-sandbox { border-bottom: 6px solid var(--color-num3); }
+.card-adventure { border-bottom: 6px solid var(--color-num5); }
+.card-tracing { border-bottom: 6px solid var(--color-num1); }
+
+.menu-card h2 {
+    font-size: 22px;
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+.menu-card p {
+    font-size: 14px;
+    color: #95a5a6;
+    line-height: 1.4;
+}
+
+/* 공통 게임 헤더 */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed #dcf0ff;
+    padding-bottom: 15px;
+}
+
+.game-header h2 {
+    font-size: 24px;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hint-text {
+    font-size: 15px;
+    color: #7f8c8d;
+}
+
+.clear-btn {
+    background: #ff5e3a;
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 15px;
+}
+
+/* 2-B. 자유 놀이터 플레이존 */
+/* 2-B. 자유 놀이터 가로 스크롤러 및 플레이존 */
+.sandbox-board-wrapper {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    border: 3px dashed #b5e2ff;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; /* 모바일 부드러운 가속 터치 스크롤 */
+    margin-bottom: 20px;
+    box-shadow: inset 0 4px 10px rgba(0,0,0,0.02);
+    display: flex;
+}
+
+.play-zone {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: transparent;
+}
+
+/* 블록 소환 영역 */
+.block-spawner {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.spawn-title {
+    font-weight: bold;
+    font-size: 16px;
+    color: #4a5568;
+}
+
+.spawner-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    overflow-x: auto;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+/* 소환 버튼 컬러들 */
+.spawn-btn {
+    flex: 1;
+    min-width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    font-family: var(--font-accent);
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.num-1 { background-color: var(--color-num1); }
+.num-2 { background-color: var(--color-num2); }
+.num-3 { background-color: var(--color-num3); }
+.num-4 { background-color: var(--color-num4); }
+.num-5 { background-color: var(--color-num5); }
+.num-6 { background-color: var(--color-num6); }
+.num-7 { background-color: var(--color-num7); }
+.num-8 { background-color: var(--color-num8); }
+.num-9 { background-color: var(--color-num9); color: #333; text-shadow: none; }
+.num-10 { background-color: #f0f0f0; color: red; border: 2px solid var(--color-num1); text-shadow: none; }
+.num-11 { background-color: #ff6b6b; }
+.num-12 { background-color: #fca510; }
+.num-13 { background-color: #f1c40f; color: #333; text-shadow: none; }
+.num-14 { background-color: #2ecc71; }
+.num-15 { background-color: #1abc9c; }
+.num-16 { background-color: #3498db; }
+.num-17 { background-color: #9b59b6; }
+.num-18 { background-color: #e84393; }
+.num-19 { background-color: #6c5ce7; }
+.num-20 { background-color: #00cec9; }
+.num-100 { background-color: #ffd700; color: #d35400; border: 2px solid #e67e22; font-weight: 800; }
+
+.spawn-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 0 rgba(0,0,0,0.15);
+}
+
+/* ----------------------------------------------------
+   👾 넘버블록 캐릭터 디자인 (CSS 블록 핵심 구조)
+---------------------------------------------------- */
+
+.numberblock-character {
+    position: absolute;
+    display: inline-flex;
+    flex-direction: column-reverse; /* 아래에서 위로 블록이 쌓임 */
+    cursor: grab;
+    touch-action: none;
+    z-index: 10;
+    transition: transform 0.1s ease;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,0.15));
+}
+
+.numberblock-character:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+    z-index: 100;
+}
+
+/* 단일 블록 스퀘어 */
+.single-block {
+    width: var(--block-unit);
+    height: var(--block-unit);
+    border: 3px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    box-shadow: inset 0 4px 6px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+/* 캐릭터별 고유 특성 데코레이션 */
+/* 1: 빨간색, 외눈박이 */
+.numberblock-character[data-value="1"] .single-block {
+    background-color: var(--color-num1);
+}
+
+/* 2: 주황색 */
+.numberblock-character[data-value="2"] .single-block {
+    background-color: var(--color-num2);
+}
+
+/* 3: 노란색 */
+.numberblock-character[data-value="3"] .single-block {
+    background-color: var(--color-num3);
+}
+
+/* 4: 초록색 */
+.numberblock-character[data-value="4"] .single-block {
+    background-color: var(--color-num4);
+}
+
+/* 4의 특수 형태 (2x2 정사각형 - 아래에서 위로 채움) */
+.numberblock-character[data-value="4"] {
+    display: flex;
+    flex-flow: column-reverse wrap;
+    width: calc(var(--block-unit) * 2);
+    height: calc(var(--block-unit) * 2);
+}
+
+/* 6의 특수 형태 (2x3 직사각형 - 보라색 주사위 테마 고증) */
+.numberblock-character[data-value="6"] {
+    display: flex;
+    flex-flow: column-reverse wrap;
+    width: calc(var(--block-unit) * 2);
+    height: calc(var(--block-unit) * 3);
+}
+
+/* 8의 특수 형태 (2x4 직사각형 - 옥토블록 문어 테마 고증) */
+.numberblock-character[data-value="8"] {
+    display: flex;
+    flex-flow: column-reverse wrap;
+    width: calc(var(--block-unit) * 2);
+    height: calc(var(--block-unit) * 4);
+}
+
+
+/* 5: 하늘색 */
+.numberblock-character[data-value="5"] .single-block {
+    background-color: var(--color-num5);
+}
+
+/* 6: 보라색 */
+.numberblock-character[data-value="6"] .single-block {
+    background-color: var(--color-num6);
+}
+
+/* 7: 무지개 색상 분할 (아래서부터 빨,주,노,초,파,남,보 고증) */
+.numberblock-character[data-value="7"] .single-block:nth-child(1) { background-color: #ff3b30; } /* 빨강 */
+.numberblock-character[data-value="7"] .single-block:nth-child(2) { background-color: #ff9500; } /* 주황 */
+.numberblock-character[data-value="7"] .single-block:nth-child(3) { background-color: #ffcc00; } /* 노랑 */
+.numberblock-character[data-value="7"] .single-block:nth-child(4) { background-color: #4cd964; } /* 초록 */
+.numberblock-character[data-value="7"] .single-block:nth-child(5) { background-color: #5ac8fa; } /* 파랑 */
+.numberblock-character[data-value="7"] .single-block:nth-child(6) { background-color: #007aff; } /* 남색 */
+.numberblock-character[data-value="7"] .single-block:nth-child(7) { background-color: #5856d6; } /* 보라 */
+
+/* 8: 자주색 */
+.numberblock-character[data-value="8"] .single-block {
+    background-color: var(--color-num8);
+}
+
+/* 9: 회색 */
+.numberblock-character[data-value="9"] .single-block {
+    background-color: var(--color-num9);
+}
+
+/* 9의 특수 형태 (3x3 정사각형 - 회색 재채기 테마 고증) */
+.numberblock-character[data-value="9"] {
+    display: flex;
+    flex-flow: column-reverse wrap;
+    width: calc(var(--block-unit) * 3);
+    height: calc(var(--block-unit) * 3);
+}
+
+/* 10의 특수 형태 (2x5 직사각형 - 슈퍼히어로 테마 고증) */
+.numberblock-character[data-value="10"] {
+    display: flex;
+    flex-flow: column-reverse wrap;
+    width: calc(var(--block-unit) * 2);
+    height: calc(var(--block-unit) * 5);
+}
+
+
+/* 10: 흰색 (빨간 테두리) */
+.numberblock-character[data-value="10"] .single-block {
+    background-color: var(--color-num10);
+    border: 3px solid var(--color-num1);
+}
+
+/* 블록 얼굴 레이어 (항상 가장 위쪽 블록에 얹힘) */
+.block-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.eyes {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    position: absolute;
+    top: 10px;
+    width: 100%;
+}
+
+.eye {
+    width: 12px;
+    height: 12px;
+    background: #000000;
+    border-radius: 50%;
+    position: relative;
+    border: 1px solid white;
+}
+
+.eye::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 4px;
+    height: 4px;
+    background: #ffffff;
+    border-radius: 50%;
+}
+
+.mouth {
+    width: 18px;
+    height: 8px;
+    border-bottom: 3px solid #000;
+    border-radius: 0 0 10px 10px;
+    position: absolute;
+    bottom: 12px;
+    transition: transform 0.2s ease;
+}
+
+/* 캐릭터별 고유 얼굴 디자인 */
+/* 1: 외눈박이 */
+.numberblock-character[data-value="1"] .eye {
+    width: 16px;
+    height: 16px;
+}
+.numberblock-character[data-value="1"] .eyes {
+    gap: 0;
+    justify-content: center;
+}
+
+/* 2: 보라색 안경 */
+.numberblock-character[data-value="2"] .eyes::before {
+    content: '👓';
+    font-size: 24px;
+    position: absolute;
+    top: -6px;
+    z-index: 2;
+}
+
+/* 3: 세 개의 노란 왕관(모자) */
+.numberblock-character[data-value="3"]::before {
+    content: '👑';
+    font-size: 20px;
+    position: absolute;
+    top: -20px;
+    left: 15px;
+    z-index: 10;
+}
+
+/* 4: 정사각형 안경 */
+.numberblock-character[data-value="4"] .eye {
+    border-radius: 2px;
+    width: 12px;
+    height: 12px;
+}
+
+/* 5: 별안경 */
+.numberblock-character[data-value="5"] .eyes::before {
+    content: '⭐ ⭐';
+    font-size: 14px;
+    position: absolute;
+    top: -2px;
+    color: #ffcc00;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    z-index: 2;
+    letter-spacing: -2px;
+}
+
+/* 7: 무지개 머리 */
+.numberblock-character[data-value="7"]::before {
+    content: '🌈';
+    font-size: 20px;
+    position: absolute;
+    top: -18px;
+    left: 15px;
+    z-index: 10;
+}
+
+/* 8: 옥토블록 문어 눈구조 */
+.numberblock-character[data-value="8"] .eyes::before {
+    content: '🐙';
+    font-size: 22px;
+    position: absolute;
+    top: -14px;
+    z-index: 2;
+}
+
+/* 10: 머리에 빨간 별 */
+.numberblock-character[data-value="10"]::before {
+    content: '⭐';
+    font-size: 22px;
+    color: red;
+    position: absolute;
+    top: -22px;
+    left: 14px;
+    z-index: 10;
+}
+
+/* 콤비네이션 연출용 애니메이션 */
+@keyframes bounce-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.block-bounce {
+    animation: bounce-scale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ----------------------------------------------------
+   ➕ 더하기 빼기 모험 (Math Adventure)
+---------------------------------------------------- */
+.adventure-main {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+.quiz-panel {
+    flex: 1.2;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.quiz-bubble {
+    background: #f0f7ff;
+    border-radius: 16px;
+    padding: 15px 20px;
+    position: relative;
+    border: 2px solid #b5e2ff;
+}
+
+.quiz-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 40px;
+    border-width: 15px 15px 0;
+    border-style: solid;
+    border-color: #b5e2ff transparent;
+    display: block;
+    width: 0;
+}
+
+#quiz-question {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.5;
+}
+
+.quiz-visual {
+    flex: 1;
+    background: #fafbfc;
+    border-radius: 12px;
+    border: 2px dashed #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.answer-panel {
+    flex: 0.8;
+    display: flex;
+    flex-direction: column;
+}
+
+.target-zone {
+    flex: 1;
+    background: #eefbee;
+    border: 4px dashed #8cd88c;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: background 0.3s ease;
+}
+
+.target-zone.drag-over {
+    background: #d4f7d4;
+    transform: scale(1.02);
+}
+
+.target-label {
+    font-size: 15px;
+    color: #55af55;
+    font-weight: bold;
+    pointer-events: none;
+    margin-bottom: 20px;
+}
+
+/* ----------------------------------------------------
+   ✍️ 숫자 쓰기 연습 (Number Tracing) - 터치 펜 최적화
+---------------------------------------------------- */
+.tracing-layout {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+.number-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding-right: 5px;
+    width: 80px;
+}
+
+.num-select-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #ffffff;
+    font-family: var(--font-accent);
+    font-size: 22px;
+    font-weight: 700;
+    color: #4a5568;
+    box-shadow: var(--shadow-soft);
+    border: 3px solid #e2e8f0;
+}
+
+.num-select-btn.active {
+    background: linear-gradient(135deg, var(--color-num1) 0%, #ff5e3a 100%);
+    color: white;
+    border-color: #ffffff;
+    box-shadow: 0 4px 15px rgba(255,59,48,0.4);
+    transform: scale(1.1);
+}
+
+.canvas-container {
+    flex: 1.5;
+    position: relative;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    border: 5px solid #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#tracing-canvas {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    cursor: crosshair;
+    touch-action: none; /* 브라우저 스크롤/바운스 방지 - 터치펜 필수 */
+}
+
+#tracing-feedback {
+    position: absolute;
+    font-size: 32px;
+    font-weight: 700;
+    color: #4cd964;
+    background: rgba(255,255,255,0.9);
+    padding: 15px 30px;
+    border-radius: 50px;
+    box-shadow: var(--shadow-strong);
+    animation: bounce-scale 0.5s ease;
+    z-index: 10;
+}
+
+.tracing-reward {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
+    border: 3px dashed #dcf0ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+}
+
+.reward-placeholder {
+    font-size: 15px;
+    color: #7f8c8d;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.tracing-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+/* ----------------------------------------------------
+   🎉 팝업 / 모달 디자인
+---------------------------------------------------- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: #ffffff;
+    border-radius: 30px;
+    padding: 40px;
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: var(--shadow-strong);
+    border: 6px solid #4cd964;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal.hidden .modal-content {
+    transform: scale(0.8);
+}
+
+#modal-title {
+    font-size: 32px;
+    color: #4cd964;
+    margin-bottom: 20px;
+}
+
+#modal-reward-character {
+    height: 260px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* 🏷️ 모달 팝업 내부 보상 넘버블록 캐릭터 축소 비율 적용 (가림 버그 방지) */
+#modal-reward-character .numberblock-character {
+    --block-unit: 20px !important; /* 모달 내 블록 크기를 20px로 강제 컴팩트화 */
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    transform: none !important;
+}
+
+/* 모달 내 100 자식 정렬 보정 */
+#modal-reward-character .numberblock-character[data-value="100"] {
+    width: calc(20px * 10) !important;
+    grid-template-columns: repeat(10, 20px) !important;
+}
+
+/* 모달 내 100 왕관 위치 보정 */
+#modal-reward-character .numberblock-character[data-value="100"]::before {
+    left: 90px !important; /* 200px 가로의 중앙 */
+    font-size: 16px !important;
+    top: -16px !important;
+}
+
+/* 모달 내 숫자 뱃지 위치 보정 */
+#modal-reward-character .numberblock-character .big-number-badge {
+    font-size: 13px !important;
+    padding: 2px 6px !important;
+    top: -30px !important;
+}
+
+#modal-reward-character .numberblock-character[data-value="100"] .big-number-badge {
+    font-size: 14px !important;
+    padding: 3px 8px !important;
+    top: -32px !important;
+}
+
+#modal-text {
+    font-size: 18px;
+    color: #4a5568;
+    margin-bottom: 30px;
+}
+
+#modal-next-btn {
+    background: linear-gradient(135deg, #4cd964 0%, #2bd04b 100%);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 12px 35px;
+    border-radius: 50px;
+    box-shadow: 0 6px 20px rgba(76,217,100,0.3);
+}
+
+/* 스크롤바 커스텀 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ----------------------------------------------------
+   🔒 보호자 확인 비밀번호 잠금 화면 스타일
+---------------------------------------------------- */
+.lock-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, #f7fdff 0%, #dcf0ff 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.lock-screen.unlocked {
+    opacity: 0;
+    transform: scale(1.08);
+    pointer-events: none;
+}
+
+.lock-box {
+    background: #ffffff;
+    border-radius: 32px;
+    padding: 35px 30px;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: var(--shadow-strong);
+    border: 6px solid #b5e2ff;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.lock-icon {
+    font-size: 54px;
+    margin-bottom: 5px;
+}
+
+.lock-box h2 {
+    font-size: 24px;
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+.lock-box p {
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.password-display {
+    display: flex;
+    gap: 15px;
+    margin: 10px 0;
+}
+
+.password-display .dot {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #b5e2ff;
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.15s ease;
+}
+
+.password-display .dot.filled {
+    background: #4cd964;
+    border-color: #4cd964;
+    transform: scale(1.1);
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.key-btn {
+    height: 55px;
+    background: #f8fbfd;
+    border: 2px solid #eef3f7;
+    border-radius: 16px;
+    font-family: var(--font-accent);
+    font-size: 22px;
+    font-weight: bold;
+    color: #2c3e50;
+    box-shadow: 0 4px 0 #eef3f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.1s ease;
+}
+
+.key-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #eef3f7;
+}
+
+.key-clear {
+    background: #ff5e3a;
+    border-color: #ff5e3a;
+    color: white;
+    box-shadow: 0 4px 0 #d94a2b;
+    font-family: var(--font-primary);
+    font-size: 14px;
+}
+.key-clear:active {
+    box-shadow: 0 1px 0 #d94a2b;
+}
+
+.key-ok {
+    background: #4cd964;
+    border-color: #4cd964;
+    color: white;
+    box-shadow: 0 4px 0 #3cb051;
+    font-family: var(--font-primary);
+    font-size: 14px;
+}
+.key-ok:active {
+    box-shadow: 0 1px 0 #3cb051;
+}
+
+.error-msg {
+    color: #ff5e3a;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.shake-anim {
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+/* ----------------------------------------------------
+   🔥 10 초과 큰 수 블록 (11~100) 전용 격자형 스타일
+---------------------------------------------------- */
+.numberblock-character.shape-big-number {
+    --block-unit: 40px; /* 기존 20px 대비 2배인 40px로 적당하고 밸런스 있는 크기로 조절 */
+    display: grid !important;
+    grid-template-columns: repeat(10, var(--block-unit)) !important; /* 10열 고정 */
+    width: calc(var(--block-unit) * 10) !important;
+    height: auto !important; /* 높이는 줄 수에 따라 자동 */
+    flex-flow: none !important; /* 기존 플렉스 해제 */
+}
+
+/* 10 이상 일반 큰수 블록 컬러 (파스텔 블루 그라데이션) */
+.numberblock-character.shape-big-number .single-block {
+    background: linear-gradient(135deg, #70d6ff 0%, #54a0ff 100%);
+}
+
+/* ⭐ 100 전용 디자인 고증 (마룬 테두리 및 살구/자홍 체스판) */
+.numberblock-character[data-value="100"] .single-block {
+    border: 1px solid #7a1515 !important; /* 짙은 적갈색 마룬 테두리 */
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.4) !important;
+}
+
+/* 체스판 격자 교차 컬러 구현 */
+.numberblock-character[data-value="100"] .single-block.chess-salmon {
+    background: linear-gradient(135deg, #ffb3b3 0%, #ff8080 100%) !important; /* 살구색 (Salmon) */
+}
+.numberblock-character[data-value="100"] .single-block.chess-puce {
+    background: linear-gradient(135deg, #a54060 0%, #852a45 100%) !important; /* 자홍색 (Puce) */
+}
+
+.numberblock-character[data-value="100"]::before {
+    content: '👑' !important;
+    position: absolute !important; /* 중요: 절대 배치를 해두어야 Grid Item으로 할당되어 격자 배치가 꼬이는 현상을 방지함 */
+    font-family: var(--font-accent);
+    font-size: 20px !important;
+    top: -20px !important;
+    left: 190px !important; /* 400px 가로 한가운데 정렬 */
+}
+
+/* ----------------------------------------------------
+   💬 100 초과 알림 토스트 팝업 스타일
+---------------------------------------------------- */
+.toast-container {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: rgba(255, 94, 58, 0.95);
+    color: white;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 10px 25px rgba(255,94,58,0.3);
+    border: 3px solid #ffffff;
+    animation: toast-in-out 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes toast-in-out {
+    0% { transform: translateY(-20px); opacity: 0; }
+    10% { transform: translateY(0); opacity: 1; }
+    90% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-20px); opacity: 0; }
+}
+
+/* ----------------------------------------------------
+   🏷️ 큰 수 블록(11~100) 숫자 오버레이 뱃지 스타일 (머리 위 말풍선)
+---------------------------------------------------- */
+.big-number-badge {
+    position: absolute;
+    top: -42px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    color: #ffffff;
+    border: 2.5px solid #ffffff;
+    border-radius: 20px;
+    padding: 3px 14px;
+    font-family: 'Fredoka One', var(--font-accent), sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(255, 65, 108, 0.4);
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: auto;
+    height: auto;
+}
+
+/* 말풍선 꼬리 장식 (중앙 정렬) */
+.big-number-badge::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-width: 7px 6px 0;
+    border-style: solid;
+    border-color: #ff4b2b transparent transparent transparent;
+    display: block;
+    width: 0;
+    height: 0;
+}
+
+/* 100 영웅 블록 전용 골드 뱃지 오버레이 */
+.numberblock-character[data-value="100"] .big-number-badge {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.45);
+    font-size: 1.25rem;
+    padding: 4px 16px;
+    top: -48px;
+}
+
+.numberblock-character[data-value="100"] .big-number-badge::after {
+    border-color: #f39c12 transparent transparent transparent;
+    bottom: -7px;
+}
+
+/* ----------------------------------------------------
+   ➕ 더하기 빼기 모험 (4지선다형 객관식 리디자인)
+---------------------------------------------------- */
+.adventure-main-new {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 0;
+    gap: 20px;
+}
+
+/* 수식 보드 */
+.quiz-equation {
+    font-family: var(--font-accent);
+    font-size: 56px;
+    font-weight: 700;
+    color: #2c3e50;
+    text-shadow: 0 4px 0px rgba(0,0,0,0.06);
+    background: #ffffff;
+    padding: 15px 50px;
+    border-radius: 30px;
+    border: 5px solid #b5e2ff;
+    box-shadow: var(--shadow-soft);
+}
+
+/* 힌트 블록 정렬 (드래그 불가, 나란히 배치) */
+.quiz-visual-new {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 40px;
+    min-height: 250px;
+    width: 100%;
+}
+
+/* 퀴즈 힌트 블록 전용 위치 리셋 강제 속성 및 세로 폭주 방지 축소화 */
+.quiz-visual-new .numberblock-character {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    cursor: default !important;
+    pointer-events: none !important; /* 클릭이나 드래그 완전 방지 */
+    --block-unit: 46px !important; /* 대화면 PC 환경에서는 본래의 웅장함을 감상하도록 46px로 거의 원복! */
+}
+
+.quiz-visual-new .numberblock-character .big-number-badge {
+    top: calc(var(--block-unit) * -1.0) !important;
+    font-size: 13px !important;
+    padding: 2px 6px !important;
+    border-width: 2px !important;
+    border-radius: 8px !important;
+}
+
+.quiz-visual-new .numberblock-character .big-number-badge::after {
+    border-width: 5px 4px 0 !important;
+    bottom: -5px !important;
+}
+
+/* 4지선다 보기 컨테이너 */
+.choices-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 650px;
+}
+
+/* 4지선다형 카드 버튼 */
+.choice-btn {
+    height: 75px;
+    border-radius: 20px;
+    font-family: var(--font-accent);
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+    transition: all 0.1s ease;
+}
+
+.choice-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+}
+
+/* 보기 카드 색상들 (주요 넘버블록 컬러 채택) */
+.choice-btn:nth-child(1) { background-color: var(--color-num1); border: 3px solid #ff4d4d; }
+.choice-btn:nth-child(2) { background-color: var(--color-num2); border: 3px solid #ff9f1a; }
+.choice-btn:nth-child(3) { background-color: var(--color-num3); border: 3px solid #fecb2f; color: #333; text-shadow: none; }
+.choice-btn:nth-child(4) { background-color: var(--color-num4); border: 3px solid #2ecc71; }
+
+/* ----------------------------------------------------
+   👑 정답 성공 피드백 오버레이 레이어
+---------------------------------------------------- */
+.adventure-feedback-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(220, 240, 255, 0.92);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.feedback-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+/* "잘했어, 하성아!" 칭찬 말풍선 */
+.feedback-bubble {
+    position: relative;
+    background: #ffffff;
+    border: 6px solid #4cd964;
+    border-radius: 30px;
+    padding: 20px 45px;
+    font-size: 38px;
+    font-weight: bold;
+    color: #2c3e50;
+    box-shadow: 0 10px 30px rgba(76,217,100,0.25);
+    text-align: center;
+    animation: scale-up-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 말풍선 아래쪽 뾰족이 */
+.feedback-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 20px 15px 0;
+    border-style: solid;
+    border-color: #ffffff transparent;
+    display: block;
+    width: 0;
+    z-index: 10;
+}
+
+.feedback-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 23px 18px 0;
+    border-style: solid;
+    border-color: #4cd964 transparent;
+    display: block;
+    width: 0;
+    z-index: 9;
+}
+
+/* 정답 넘버블록 캐릭터 띄우는 위치 */
+.feedback-block-display {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    min-height: 250px;
+}
+
+.feedback-block-display .numberblock-character {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    animation: bounce-loop 1.2s infinite ease-in-out;
+}
+
+@keyframes bounce-loop {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.05); }
+}
+
+@keyframes scale-up-bounce {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ----------------------------------------------------
+   🗺️ 수학 모험 난이도 선택기 (Difficulty Selector)
+---------------------------------------------------- */
+.adventure-selector-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 30px;
+    background: radial-gradient(circle, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 20px;
+}
+
+.adventure-selector-screen h2 {
+    font-family: var(--font-accent);
+    font-size: 42px;
+    color: #0284c7;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.selector-desc {
+    font-size: 20px;
+    color: #64748b;
+    margin-bottom: 40px;
+}
+
+/* 난이도 버튼 그리드 */
+.difficulty-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 580px;
+    margin-bottom: 40px;
+}
+
+/* 각 난이도 카드 버튼 */
+.diff-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-radius: 25px;
+    border: 4px solid white;
+    cursor: pointer;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-align: left;
+}
+
+.diff-btn:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.diff-btn:active {
+    transform: translateY(1px);
+}
+
+.diff-title {
+    font-family: var(--font-accent);
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+}
+
+.diff-info {
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 각 난이도 버튼 개별 시그니처 색상 (넘버블록스 테마) */
+.diff-btn[data-start-stage="1"] {
+    background: linear-gradient(135deg, #4cd964 0%, #2ecc71 100%);
+    box-shadow: 0 6px 0 #27ae60;
+}
+.diff-btn[data-start-stage="11"] {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    box-shadow: 0 6px 0 #1f6696;
+}
+.diff-btn[data-start-stage="21"] {
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    box-shadow: 0 6px 0 #d35400;
+    color: #333;
+}
+.diff-btn[data-start-stage="21"] .diff-info {
+    color: #444;
+}
+.diff-btn[data-start-stage="31"] {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    box-shadow: 0 6px 0 #a04000;
+}
+.diff-btn[data-start-stage="41"] {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    box-shadow: 0 6px 0 #6c3483;
+}
+
+/* 홈 가기 및 뒤로가기 버튼 */
+.selector-back-btn {
+    padding: 15px 35px;
+    font-family: var(--font-accent);
+    font-size: 20px;
+    font-weight: bold;
+    color: #64748b;
+    background: #e2e8f0;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.selector-back-btn:hover {
+    background: #cbd5e1;
+    color: #334155;
+}
+
+/* 게임 헤더용 정렬 및 단계선택 버튼 */
+.header-left-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-back-btn {
+    padding: 8px 16px;
+    background: #f1f5f9;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.header-back-btn:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}
+
+.adventure-game-playzone {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 😢 오답 패널티용 블록 슬픈 힝구 얼굴 스타일 */
+.numberblock-character.sad-face .eye {
+    background: #333333 !important;
+    border-radius: 50% 50% 0 0 !important; /* 아래를 깎아 처진 억울한 눈망울 연출 */
+    height: 7px !important;
+    transform: rotate(15deg);
+}
+
+.numberblock-character.sad-face .eye:nth-child(2) {
+    transform: rotate(-15deg);
+}
+
+.numberblock-character.sad-face .mouth {
+    width: 14px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    border-top: 4px solid #333333 !important; /* 위쪽 보더만 주어 뒤집힌 U자(시옷 입) 완성 */
+    border-bottom: none !important;
+    background: transparent !important;
+    margin-top: 8px !important;
+}
+
+/* 셰이크 오답 버튼용 진동 효과 정의 */
+@keyframes shake-btn {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+.shake-anim {
+    animation: shake-btn 0.3s ease-in-out;
+}
+
+/* ====================================================
+   📱 반응형 및 작은 화면(노트북/모바일) 최적화 스타일
+==================================================== */
+
+/* 1. 노트북 및 태블릿용 세로 해상도가 좁은 화면 최적화 (높이 820px 이하) */
+@media (max-height: 820px), (max-width: 1024px) {
+    header {
+        height: 60px;
+        padding: 0 20px;
+    }
+    .logo-text-eng {
+        font-size: 22px;
+    }
+    .logo-text-kor {
+        font-size: 14px;
+    }
+    .screen {
+        padding: 15px; /* 패딩 축소로 여백 확보 */
+    }
+    
+    /* 자유 놀이터(자유 모드) 내부 높이 여백 보정 및 블록 크기 최적화 */
+    .sandbox-container {
+        gap: 10px !important;
+    }
+    .sandbox-playzone {
+        height: 520px !important; /* 놀이판 높이 여유 확보 */
+    }
+    #sandbox-playzone .numberblock-character {
+        --block-unit: 38px !important; /* 소형 노트북 칠판 내에서 7, 10 블록의 잘림 방지를 위해 38px로 가변 다운! */
+    }
+    #sandbox-playzone .numberblock-character .big-number-badge {
+        top: calc(var(--block-unit) * -1.0) !important;
+        font-size: 14px !important;
+        padding: 2px 8px !important;
+    }
+
+    /* ➡️ 난이도 선택 대기실 노트북 해상도 최적화 (2열 바둑판 구조로 세로 짤림 예방) */
+    .difficulty-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        max-width: 680px !important;
+        margin-bottom: 15px !important;
+    }
+    .diff-btn {
+        padding: 10px 18px !important;
+        border-radius: 16px !important;
+        border-width: 2px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04) !important;
+    }
+    .diff-title {
+        font-size: 18px !important;
+    }
+    .diff-info {
+        font-size: 13px !important;
+    }
+    .selector-back-btn {
+        padding: 10px 25px !important;
+        font-size: 15px !important;
+        border-radius: 12px !important;
+    }
+    
+    /* 더하기 빼기 모험 문제판 크기 조율 */
+    .quiz-equation {
+        font-size: 40px !important;
+        padding: 10px 35px !important;
+    }
+    .quiz-visual-new {
+        min-height: 180px !important;
+        gap: 20px !important;
+    }
+    .quiz-visual-new .numberblock-character {
+        --block-unit: 38px !important; /* 가로 배치 환경인 노트북에서는 38px로 웅장하게 키워도 오버플로우가 나지 않습니다! */
+    }
+    .choice-btn {
+        height: 60px !important;
+        font-size: 26px !important;
+    }
+    
+    /* 숫자 쓰기 연습 캔버스 크기 다운 */
+    .tracing-layout {
+        gap: 15px !important;
+    }
+    #tracing-canvas {
+        max-width: 400px !important;
+        max-height: 400px !important;
+    }
+    .canvas-container {
+        padding: 10px !important;
+    }
+}
+
+/* 2. 스마트폰 및 가로 폭이 좁은 기기 최적화 (가로 폭 768px 이하 - 모바일) */
+@media (max-width: 768px) {
+    #app-container {
+        width: 100vw !important;
+        height: 100dvh !important; /* 모바일 브라우저 툴바 높이를 감안한 동적 뷰포트 높이 강제! */
+        max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border: none !important;
+        border-radius: 0 !important;
+    }
+    
+    header {
+        height: 48px !important; /* 헤더 높이 슬림화로 칠판 공간 추가 세이브 */
+        padding: 0 8px !important;
+    }
+    
+    .logo {
+        gap: 4px !important;
+    }
+
+    .logo-text-eng {
+        font-size: 15px !important;
+    }
+    .logo-text-kor {
+        display: none !important; /* 모바일 헤더 협소 방지를 위해 숨김 */
+    }
+    
+    .header-controls {
+        gap: 6px !important;
+    }
+    
+    .home-btn {
+        font-size: 12px !important;
+        padding: 5px 10px !important;
+    }
+    
+    .screen {
+        padding: 8px !important;
+    }
+
+    /* ➡️ 모험 모드 대기실 난이도 카드 모바일 최적화 */
+    .difficulty-grid {
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+        padding: 0 10px !important;
+    }
+    
+    .diff-btn {
+        padding: 12px 20px !important;
+        border-radius: 16px !important;
+        border-width: 2px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04) !important;
+    }
+    
+    .diff-title {
+        font-size: 18px !important;
+    }
+    
+    .diff-info {
+        font-size: 13px !important;
+    }
+    
+    .selector-back-btn {
+        padding: 10px 25px !important;
+        font-size: 16px !important;
+        border-radius: 12px !important;
+    }
+
+    .header-left-group {
+        gap: 8px !important;
+    }
+    
+    .adventure-to-selector-btn {
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+    }
+    
+    /* 모바일용 공통 게임 헤더 레이아웃 (겹침 방지 Grid 정렬) */
+    .game-header {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important; /* 좌측 텍스트 영역 / 우측 버튼 영역 */
+        grid-template-rows: auto auto !important;
+        gap: 6px !important;
+        align-items: center !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 10px !important;
+    }
+    
+    .game-header h2 {
+        grid-column: 1 / 2 !important;
+        grid-row: 1 / 2 !important;
+        font-size: 20px !important;
+        margin: 0 !important;
+    }
+    
+    .game-header .hint-text {
+        grid-column: 1 / 2 !important;
+        grid-row: 2 / 3 !important;
+        font-size: 12px !important;
+        margin: 0 !important;
+        line-height: 1.3 !important;
+    }
+    
+    .game-header .clear-btn {
+        grid-column: 2 / 3 !important;
+        grid-row: 1 / 3 !important; /* 세로 두 칸을 병합하여 우측 중앙에 깔끔하게 정렬 */
+        align-self: center !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+    }
+    
+    /* 🏠 홈 화면 모바일 배치 최적화 및 슬림화 (잘림 및 겹침 해결) */
+    #screen-home {
+        justify-content: flex-start !important; /* 상단 바짝 밀착 */
+        align-items: center !important;
+        padding-top: 15px !important;
+    }
+    
+    .main-title {
+        font-size: 24px !important; /* 글씨 소폭 축소 */
+        margin-bottom: 4px !important;
+        margin-top: 5px !important;
+    }
+    
+    .main-subtitle {
+        font-size: 13px !important;
+        margin-bottom: 25px !important; /* 환영 문구 가시성 확보 */
+        display: block !important;
+    }
+    
+    /* 3대 메뉴 카드를 수평 컴팩트형 리스트 카드로 전면 개편 */
+    .menu-grid {
+        grid-template-columns: 1fr !important; /* 1열 수직 나열 */
+        gap: 10px !important;
+        padding: 0 10px !important;
+        width: 100% !important;
+    }
+    
+    .menu-card {
+        display: grid !important;
+        grid-template-columns: auto 1fr !important;
+        grid-template-rows: auto auto !important;
+        column-gap: 15px !important;
+        row-gap: 2px !important;
+        align-items: center !important;
+        padding: 12px 18px !important;
+        border-radius: 20px !important;
+        text-align: left !important;
+        border-width: 3px !important;
+    }
+    
+    .card-icon {
+        grid-column: 1 / 2 !important;
+        grid-row: 1 / 3 !important; /* 좌측에 세로 2칸 통합으로 아이콘 아담하게 배치 */
+        font-size: 32px !important;
+        width: 52px !important;
+        height: 52px !important;
+        margin-bottom: 0 !important;
+        align-self: center !important;
+    }
+    
+    .menu-card h2 {
+        grid-column: 2 / 3 !important;
+        grid-row: 1 / 2 !important;
+        font-size: 16px !important;
+        margin: 0 !important;
+        text-align: left !important;
+        color: #2c3e50 !important;
+        align-self: end !important;
+    }
+    
+    .menu-card p {
+        grid-column: 2 / 3 !important;
+        grid-row: 2 / 3 !important;
+        font-size: 11px !important;
+        margin: 0 !important;
+        text-align: left !important;
+        color: #7f8c8d !important;
+        line-height: 1.3 !important;
+        align-self: start !important;
+    }
+    
+    /* 자유 놀이터 모바일 정렬 및 작업공간 세로 극대화 */
+    .sandbox-container {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .sandbox-board-wrapper {
+        flex: 1 !important; /* 남는 세로 높이를 전부 차지하도록 팽창 */
+        height: auto !important; /* 고정 높이 해제 */
+        min-height: 380px !important; /* 폰 세로 크기에 맞춰 최소 380px 이상 웅장하게 확보 */
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        border-width: 3px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    #sandbox-playzone {
+        flex: none !important;
+        width: 1500px !important;
+        height: 100% !important;
+    }
+
+    /* 모바일 블록 소환 영역 컴팩트화 (화면 세로 절약) */
+    .block-spawner {
+        padding: 10px !important;
+        gap: 6px !important;
+        border-radius: 14px !important;
+    }
+
+    .spawner-title {
+        font-size: 13px !important;
+        margin-bottom: 2px !important;
+        text-align: center;
+    }
+
+    .spawner-buttons {
+        gap: 8px !important;
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        overflow-x: auto !important; /* 가로 스크롤 허용 */
+        display: flex !important;
+        justify-content: flex-start !important; /* 스크롤 되도록 정렬 */
+    }
+
+    .spawner-buttons .spawn-btn {
+        flex: none !important; /* 고정 크기 유지하여 가로로 나란히 나열 */
+        min-width: 48px !important;
+        height: 44px !important;
+        font-size: 15px !important;
+        border-radius: 10px !important;
+    }
+    
+    /* 더하기 빼기 모험 모바일 대응 */
+    .quiz-equation {
+        font-size: 32px !important;
+        padding: 8px 25px !important;
+        border-width: 3px !important;
+    }
+    
+    .quiz-visual-new {
+        flex-direction: column !important; /* 좁은 모바일 폭 극복을 위해 위아래 수직 정렬! */
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 220px !important;
+        height: auto !important;
+        gap: 8px !important;
+        padding: 5px 0 !important;
+    }
+    .quiz-visual-new .numberblock-character {
+        --block-unit: 20px !important; /* 모바일 세로 뷰포트 내 가독성과 넘침 방지 밸런스를 고려해 20px로 상향! */
+    }
+    
+    .quiz-visual-new .visual-op-sign {
+        margin: 4px 0 !important;
+        font-size: 26px !important; /* 수직 간섭 최소화를 위해 크기 다듬음 */
+    }
+    
+    .choices-container {
+        grid-template-columns: repeat(2, 1fr) !important; /* 모바일은 누르기 쉽게 2x2 그리드 배열 */
+        gap: 10px !important;
+        max-width: 100% !important;
+    }
+    
+    .choice-btn {
+        height: 52px !important;
+        font-size: 22px !important;
+        border-radius: 14px !important;
+    }
+    
+    /* 숫자 쓰기 연습 모바일 대응 */
+    .tracing-layout {
+        flex-direction: column !important;
+        align-items: center !important;
+        overflow-y: auto !important;
+        gap: 10px !important;
+    }
+    
+    .number-selector {
+        width: 100% !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        padding: 6px !important;
+        gap: 5px !important;
+        height: auto !important;
+    }
+    
+    .num-select-btn {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 14px !important;
+    }
+    
+    .canvas-container {
+        width: 100% !important;
+        max-width: 300px !important; /* 캔버스 비율 모바일에 맞춤 */
+        aspect-ratio: 1/1 !important;
+        padding: 5px !important;
+        margin: 0 auto !important;
+    }
+    
+    #tracing-canvas {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+    
+    .tracing-reward {
+        width: 100% !important;
+        min-height: 100px !important;
+        margin-top: 5px !important;
+        padding: 10px !important;
+    }
+    
+    /* 성공/실패 모달창 모바일 크기 최적화 */
+    .modal-content {
+        padding: 20px !important;
+        width: 95% !important;
+        max-width: 340px !important;
+    }
+    #modal-title {
+        font-size: 24px !important;
+    }
+    #modal-reward-character {
+        height: 180px !important;
+    }
+}
+
+/* ==========================================
+   🎵 배경음악 볼륨 조절 슬라이더 UI
+   ========================================== */
+.volume-control-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 6px 14px;
+    border-radius: 30px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.volume-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.volume-icon {
+    font-size: 1.1rem;
+}
+
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 90px;
+    height: 8px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+}
+
+/* ==========================================
+   👾 원작 넘버블록스 이미지 캐릭터 전용 스타일
+   ========================================== */
+.numberblock-character.image-character {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    flex-direction: column;
+}
+
+.numberblock-img {
+    height: 120px;
+    width: auto;
+    max-width: 240px;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.18));
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.numberblock-character[data-value="0"] .numberblock-img { height: 75px; }
+.numberblock-character[data-value="1"] .numberblock-img { height: 85px; }
+.numberblock-character[data-value="2"] .numberblock-img { height: 100px; }
+.numberblock-character[data-value="3"] .numberblock-img { height: 115px; }
+.numberblock-character[data-value="4"] .numberblock-img { height: 125px; }
+.numberblock-character[data-value="5"] .numberblock-img { height: 135px; }
+.numberblock-character[data-value="6"] .numberblock-img { height: 140px; }
+.numberblock-character[data-value="7"] .numberblock-img { height: 145px; }
+.numberblock-character[data-value="8"] .numberblock-img { height: 150px; }
+.numberblock-character[data-value="9"] .numberblock-img { height: 155px; }
+.numberblock-character[data-value="10"] .numberblock-img { height: 165px; }
+.numberblock-character[data-value="11"] .numberblock-img { height: 175px; }
+.numberblock-character[data-value="12"] .numberblock-img { height: 180px; }
+.numberblock-character[data-value="13"] .numberblock-img { height: 185px; }
+.numberblock-character[data-value="14"] .numberblock-img { height: 190px; }
+.numberblock-character[data-value="15"] .numberblock-img { height: 195px; }
+.numberblock-character[data-value="16"] .numberblock-img { height: 200px; }
+.numberblock-character[data-value="17"] .numberblock-img { height: 205px; }
+.numberblock-character[data-value="18"] .numberblock-img { height: 210px; }
+.numberblock-character[data-value="19"] .numberblock-img { height: 215px; }
+.numberblock-character[data-value="20"] .numberblock-img { height: 220px; }
+.numberblock-character[data-value="100"] .numberblock-img { height: 300px; max-width: 360px; }
+
+.quiz-visual-new .numberblock-character {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 8px;
+}
+
+.quiz-visual-new .numberblock-img {
+    height: 125px;
+}
+
+.tracing-reward .numberblock-character {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+.tracing-reward .numberblock-img {
+    height: 165px;
+}
+
+.btn-thumb-img {
+    height: 28px;
+    width: auto;
+    max-width: 28px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 4px;
+    pointer-events: none;
+}
+
+
+
+

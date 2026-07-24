@@ -1,0 +1,1623 @@
+/* ----------------------------------------------------
+   🎮 넘버블록스 수학 놀이터 - 자바스크립트 (game.js)
+---------------------------------------------------- */
+
+// ==========================================
+// 1. 전역 상태 및 사운드 시스템
+// ==========================================
+let currentMode = 'home'; // 'home', 'sandbox', 'adventure', 'tracing'
+let soundEnabled = true;
+let audioCtx = null;
+
+// ==========================================
+// 🎵 배경음악 (BGM) 순환 플레이리스트 시스템
+// NumberBlocks.mp3 -> NumberBlocks2.mp3 -> NumberBlocks3.mp3 -> 반복
+// ==========================================
+const bgmPlaylist = [
+    './NumberBlocks.mp3',
+    './NumberBlocks2.mp3',
+    './NumberBlocks3.mp3'
+];
+let currentBgmIndex = 0;
+
+function getCurrentBgmGain() {
+    // NumberBlocks2.mp3 (index 1) 음량이 많이 작으므로 3.5배 음량 강력 증폭 보정
+    return (currentBgmIndex === 1) ? 3.5 : 1.0;
+}
+
+const bgm = new Audio(bgmPlaylist[currentBgmIndex]);
+bgm.loop = false; // 곡이 끝나면 자동으로 다음 곡으로 전환하기 위해 false로 설정
+let bgmStarted = false;
+
+// 곡이 종료되면 다음 트랙으로 자동 전환 및 연속 재생
+function playNextBgmTrack() {
+    currentBgmIndex = (currentBgmIndex + 1) % bgmPlaylist.length;
+    bgm.src = bgmPlaylist[currentBgmIndex];
+    const targetVol = currentTargetBgmVolume * userBgmVolumeRatio * getCurrentBgmGain();
+    bgm.volume = Math.max(0, Math.min(1, targetVol));
+    if (soundEnabled && bgmStarted) {
+        bgm.play().catch(err => console.log("다음 BGM 곡 재생 오류:", err));
+    }
+}
+
+bgm.addEventListener('ended', playNextBgmTrack);
+
+// 🎵 3가지 칭찬 멘트 및 음성 턴제 순환 플레이리스트
+const praiseRotationList = [
+    { audioSrc: './goodjob.mp3', text: '하성아 잘했어! 👑', gain: 1.0 },
+    { audioSrc: './goodjob2.mp3', text: '하성아 GoodJob! 💎', gain: 1.8 },
+    { audioSrc: './goodjob3.mp3', text: 'Excellent! 하성! 🔥', gain: 3.0 }
+];
+let currentPraiseIndex = 0;
+let goodJobAudio = null;
+
+function playGoodJob(audioSrc = './goodjob.mp3', gainMultiplier = 1.0) {
+    if (!soundEnabled) return;
+    if (goodJobAudio) {
+        goodJobAudio.pause();
+        goodJobAudio.currentTime = 0;
+    }
+    goodJobAudio = new Audio(audioSrc);
+    
+    // Web Audio API를 사용해 음량이 작은 칭찬 음성 3.0배까지 강력 증폭
+    initAudio();
+    if (audioCtx) {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        try {
+            const source = audioCtx.createMediaElementSource(goodJobAudio);
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(gainMultiplier, audioCtx.currentTime);
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+        } catch (e) {
+            console.log("Web Audio gain setup exception:", e);
+        }
+    }
+    
+    goodJobAudio.play().catch(err => console.log("GoodJob audio error:", err));
+}
+
+// 볼륨 모드 설정값 (메뉴: 크게 0.5, 게임 수행: 작게 0.15)
+const BGM_VOLUME_HIGH = 0.5;
+const BGM_VOLUME_LOW = 0.15;
+let currentTargetBgmVolume = BGM_VOLUME_HIGH;
+let userBgmVolumeRatio = 0.5; // 슬라이더 기본값 (50%)
+let lastUserVolumeRatio = 0.5;
+let bgmFadeInterval = null;
+
+function updateEffectiveBgmVolume() {
+    if (!soundEnabled || !bgmStarted) return;
+    const effectiveVolume = currentTargetBgmVolume * userBgmVolumeRatio * getCurrentBgmGain();
+    bgm.volume = Math.max(0, Math.min(1, effectiveVolume));
+}
+
+function playBgm() {
+    if (!soundEnabled) return;
+    const targetVol = currentTargetBgmVolume * userBgmVolumeRatio * getCurrentBgmGain();
+    if (!bgmStarted) {
+        bgm.volume = Math.max(0, Math.min(1, targetVol));
+        bgm.play().then(() => {
+            bgmStarted = true;
+        }).catch(err => {
+            console.log("BGM 재생 대기 (사용자 터치/클릭 필요):", err);
+        });
+    } else if (bgm.paused) {
+        bgm.volume = Math.max(0, Math.min(1, targetVol));
+        bgm.play().catch(err => console.log(err));
+    }
+}
+
+function pauseBgm() {
+    bgm.pause();
+}
+
+function setBgmVolume(targetVolume, duration = 400) {
+    currentTargetBgmVolume = targetVolume;
+    if (!soundEnabled) return;
+    const targetVol = targetVolume * userBgmVolumeRatio * getCurrentBgmGain();
+    if (!bgmStarted) {
+        bgm.volume = Math.max(0, Math.min(1, targetVol));
+        return;
+    }
+
+    if (bgmFadeInterval) clearInterval(bgmFadeInterval);
+    const startVolume = bgm.volume;
+    const endVolume = Math.max(0, Math.min(1, targetVol));
+    const steps = 15;
+    const delta = (endVolume - startVolume) / steps;
+    let step = 0;
+
+    bgmFadeInterval = setInterval(() => {
+        step++;
+        const nextVol = startVolume + delta * step;
+        bgm.volume = Math.max(0, Math.min(1, nextVol));
+        if (step >= steps) {
+            bgm.volume = Math.max(0, Math.min(1, endVolume));
+            clearInterval(bgmFadeInterval);
+            bgmFadeInterval = null;
+        }
+    }, duration / steps);
+}
+
+// 효과음 재생용 Web Audio API 합성 엔진
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (sessionStorage.getItem('unlocked') === 'true' && soundEnabled) {
+        playBgm();
+    }
+}
+
+function playSound(type) {
+    if (!soundEnabled) return;
+    initAudio();
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+    
+    switch (type) {
+        case 'pop': // 블록 소환음
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(150, now);
+            osc1.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.15);
+            break;
+            
+        case 'merge': // 합체음 (도-미-솔 화음 또는 부드러운 상승음)
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                gain.gain.setValueAtTime(0.15, now + idx * 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.05);
+                osc.stop(now + idx * 0.05 + 0.3);
+            });
+            break;
+
+        case 'split': // 쪼개기음 (높은음에서 낮은음으로 쇽!)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(800, now);
+            osc2.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+            gain2.gain.setValueAtTime(0.2, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now);
+            osc2.stop(now + 0.2);
+            break;
+
+        case 'success': // 정답/성공 (트럼펫 느낌의 빰빰!)
+            const successNotes = [523.25, 523.25, 523.25, 659.25, 783.99]; // C5, C5, C5, E5, G5
+            const durations = [0.1, 0.1, 0.1, 0.15, 0.4];
+            let timeAccumulator = 0;
+            successNotes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; // 브라스 톤
+                
+                // 간단한 로우패스 필터로 부드럽게 만듦
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 1200;
+
+                osc.frequency.setValueAtTime(freq, now + timeAccumulator);
+                gain.gain.setValueAtTime(0.12, now + timeAccumulator);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + timeAccumulator + durations[idx]);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now + timeAccumulator);
+                osc.stop(now + timeAccumulator + durations[idx]);
+                timeAccumulator += durations[idx] - 0.02;
+            });
+            break;
+
+        case 'draw': // 선 그리기 미세음 (지속적인 연필 사운드 느낌)
+            const oscDraw = audioCtx.createOscillator();
+            const gainDraw = audioCtx.createGain();
+            oscDraw.type = 'sine';
+            oscDraw.frequency.setValueAtTime(300, now);
+            gainDraw.gain.setValueAtTime(0.03, now);
+            gainDraw.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            oscDraw.connect(gainDraw);
+            gainDraw.connect(audioCtx.destination);
+            oscDraw.start(now);
+            oscDraw.stop(now + 0.05);
+            break;
+    }
+}
+
+// ==========================================
+// 2. 화면 전환 매니저
+// ==========================================
+function initAdventure() {
+    const playzone = document.getElementById('adventure-game-playzone');
+    const selector = document.getElementById('adventure-selector-screen');
+    if (playzone) playzone.classList.add('hidden');
+    if (selector) selector.classList.remove('hidden');
+    setBgmVolume(BGM_VOLUME_HIGH); // 메뉴 선택 화면: 크게
+}
+
+function switchMode(mode) {
+    currentMode = mode;
+    
+    // 모든 화면 숨김
+    document.querySelectorAll('.screen').forEach(scr => scr.classList.add('hidden'));
+    
+    // 특정 화면 활성화
+    const activeScreen = document.getElementById(`screen-${mode}`);
+    if (activeScreen) activeScreen.classList.remove('hidden');
+
+    // 홈 이동 버튼 보이기/숨기기
+    const btnHome = document.getElementById('btn-home');
+    if (mode === 'home') {
+        btnHome.classList.add('hidden');
+        setBgmVolume(BGM_VOLUME_HIGH); // 메뉴 선택 화면: 크게
+    } else {
+        btnHome.classList.remove('hidden');
+    }
+
+    // 모드 진입 시 초기화 동작
+    if (mode === 'sandbox') {
+        initSandbox();
+        setBgmVolume(BGM_VOLUME_LOW); // 자유 놀이터 (게임 과정): 작게
+    } else if (mode === 'adventure') {
+        initAdventure();
+    } else if (mode === 'tracing') {
+        currentTracingNum = 1;
+        initTracing();
+        setBgmVolume(BGM_VOLUME_LOW); // 숫자 쓰기 (게임 과정): 작게
+    }
+}
+
+// 이벤트 바인딩
+document.getElementById('menu-sandbox').addEventListener('click', () => switchMode('sandbox'));
+document.getElementById('menu-adventure').addEventListener('click', () => switchMode('adventure'));
+document.getElementById('menu-tracing').addEventListener('click', () => switchMode('tracing'));
+document.getElementById('btn-home').addEventListener('click', () => switchMode('home'));
+document.getElementById('btn-logo').addEventListener('click', () => switchMode('home'));
+
+const soundBtn = document.getElementById('btn-sound-toggle');
+const volumeSlider = document.getElementById('bgm-volume-slider');
+
+if (volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+        userBgmVolumeRatio = parseFloat(e.target.value) / 100;
+        if (userBgmVolumeRatio > 0) {
+            soundEnabled = true;
+            soundBtn.textContent = '🔊';
+            lastUserVolumeRatio = userBgmVolumeRatio;
+        } else {
+            soundEnabled = false;
+            soundBtn.textContent = '🔇';
+        }
+        updateEffectiveBgmVolume();
+        if (soundEnabled && bgm.paused) {
+            playBgm();
+        }
+    });
+}
+
+soundBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    if (volumeSlider) {
+        if (soundEnabled) {
+            userBgmVolumeRatio = lastUserVolumeRatio > 0 ? lastUserVolumeRatio : 0.5;
+            volumeSlider.value = Math.round(userBgmVolumeRatio * 100);
+            playBgm();
+            setBgmVolume(currentTargetBgmVolume);
+        } else {
+            userBgmVolumeRatio = 0;
+            volumeSlider.value = 0;
+            pauseBgm();
+        }
+    }
+    initAudio();
+});
+
+// ==========================================
+// 3. 넘버블록스 공통 렌더링 헬퍼
+// ==========================================
+function createBlockElement(value) {
+    const char = document.createElement('div');
+    
+    // 드래그 앤 드롭을 위한 위치 초기화
+    char.style.left = '50px';
+    char.style.top = '50px';
+
+    if ((value >= 0 && value <= 20) || value === 100) {
+        // 0~20, 100: 원작 캐릭터 이미지 적용
+        char.className = 'numberblock-character image-character';
+        char.dataset.value = value;
+
+        const img = document.createElement('img');
+        img.src = `./resources/imgs/number${value}.png`;
+        img.alt = `Numberblock ${value}`;
+        img.className = 'numberblock-img';
+        img.draggable = false;
+        char.appendChild(img);
+    } else {
+        // 11 이상: 기존 CSS 블록 쌓기 방식 적용
+        char.className = 'numberblock-character shape-big-number';
+        char.dataset.value = value;
+
+        // 큰 수 뱃지 표시
+        const badge = document.createElement('div');
+        badge.className = 'big-number-badge';
+        badge.textContent = value;
+        char.appendChild(badge);
+
+        // 수치만큼 스퀘어 블록 쌓기
+        for (let i = 0; i < value; i++) {
+            const block = document.createElement('div');
+            block.className = 'single-block';
+            
+            if (value === 100) {
+                const row = Math.floor(i / 10);
+                const col = i % 10;
+                if ((row + col) % 2 === 0) {
+                    block.classList.add('chess-salmon');
+                } else {
+                    block.classList.add('chess-puce');
+                }
+            } else {
+                // 알록달록 무지개 패턴 색상 적용
+                const colors = [
+                    '#ff3b30', '#ff9500', '#ffcc00', '#4cd964', 
+                    '#5ac8fa', '#007aff', '#5856d6', '#ff2d55'
+                ];
+                block.style.backgroundColor = colors[i % colors.length];
+            }
+            
+            // 맨 위 블록에 넘버블록 얼굴 렌더링
+            if (i === value - 1) {
+                const face = document.createElement('div');
+                face.className = 'block-face';
+                
+                const eyes = document.createElement('div');
+                eyes.className = 'eyes';
+                for (let e = 0; e < 2; e++) {
+                    const eye = document.createElement('div');
+                    eye.className = 'eye';
+                    eyes.appendChild(eye);
+                }
+                
+                const mouth = document.createElement('div');
+                mouth.className = 'mouth';
+                
+                face.appendChild(eyes);
+                face.appendChild(mouth);
+                block.appendChild(face);
+            }
+            
+            char.appendChild(block);
+        }
+    }
+
+    // 📱 모바일/PC 통합형 더블 탭 및 더블 클릭 분할 이벤트 바인딩 (300ms 타임 필터)
+    let lastTapTime = 0;
+    char.addEventListener('pointerdown', (e) => {
+        const currentTime = new Date().getTime();
+        const tapDelay = currentTime - lastTapTime;
+        
+        if (tapDelay < 300 && tapDelay > 0) {
+            e.stopPropagation();
+            splitBlock(char);
+            lastTapTime = 0; // 격발 후 리셋
+        } else {
+            lastTapTime = currentTime;
+        }
+    });
+
+    // 드래그 기능 부여
+    makeDraggable(char);
+
+    return char;
+}
+
+// ==========================================
+// 4. 드래그 앤 드롭 (Pointer Events - 마우스, 터치, 펜 호환)
+// ==========================================
+let activeDragElement = null;
+let dragOffset = { x: 0, y: 0 };
+
+function makeDraggable(el) {
+    el.addEventListener('pointerdown', onPointerDown);
+}
+
+function onPointerDown(e) {
+    // 터치/마우스 이벤트 대상 요소 확보
+    activeDragElement = e.currentTarget;
+    initAudio(); // 첫 드래그 시 오디오 컨텍스트 활성화
+
+    // 드래그 오프셋 계산
+    const rect = activeDragElement.getBoundingClientRect();
+    const parentRect = activeDragElement.parentElement.getBoundingClientRect();
+    
+    dragOffset.x = e.clientX - rect.left;
+    dragOffset.y = e.clientY - rect.top;
+
+    activeDragElement.setPointerCapture(e.pointerId);
+    activeDragElement.addEventListener('pointermove', onPointerMove);
+    activeDragElement.addEventListener('pointerup', onPointerUp);
+    
+    // 드래그 시작 시 스타일 조절
+    activeDragElement.style.transition = 'none';
+}
+
+function onPointerMove(e) {
+    if (!activeDragElement) return;
+
+    const parent = activeDragElement.parentElement;
+    const parentRect = parent.getBoundingClientRect();
+    
+    // 부모 컨테이너 내의 상대 좌표 계산
+    let x = e.clientX - parentRect.left - dragOffset.x;
+    let y = e.clientY - parentRect.top - dragOffset.y;
+
+    // 경계선 밖으로 나가지 못하게 제한
+    const maxLeft = parentRect.width - activeDragElement.offsetWidth;
+    const maxTop = parentRect.height - activeDragElement.offsetHeight;
+    
+    x = Math.max(0, Math.min(x, maxLeft));
+    y = Math.max(0, Math.min(y, maxTop));
+
+    activeDragElement.style.left = `${x}px`;
+    activeDragElement.style.top = `${y}px`;
+}
+
+function onPointerUp(e) {
+    if (!activeDragElement) return;
+
+    activeDragElement.releasePointerCapture(e.pointerId);
+    activeDragElement.removeEventListener('pointermove', onPointerMove);
+    activeDragElement.removeEventListener('pointerup', onPointerUp);
+
+    activeDragElement.style.transition = 'transform 0.1s ease';
+
+    const currentEl = activeDragElement;
+    activeDragElement = null;
+
+    // 드래그 종료 시 충돌 검사 실행
+    checkMergeOrDrop(currentEl);
+}
+
+// 쪼개기(분해) 로직 - 더블클릭 시 반으로 쪼개거나 1을 떼어냄
+function splitBlock(blockEl) {
+    const val = parseInt(blockEl.dataset.value);
+    if (val <= 1) return; // 1은 더 이상 쪼갤 수 없음
+
+    const parent = blockEl.parentElement;
+    const left = parseInt(blockEl.style.left);
+    const top = parseInt(blockEl.style.top);
+
+    // 쪼개지는 비율 계산 (최대한 절반에 가깝게 나눔)
+    const val1 = Math.floor(val / 2);
+    const val2 = val - val1;
+
+    // 기존 블록 제거
+    blockEl.remove();
+    playSound('split');
+
+    // 새 블록 두 개 생성 및 배치
+    const el1 = createBlockElement(val1);
+    const el2 = createBlockElement(val2);
+
+    el1.style.left = `${left}px`;
+    el1.style.top = `${top}px`;
+    
+    // 약간 빗겨나가게 두 번째 블록 배치해 쪼개지는 연출 극대화
+    el2.style.left = `${left + 60}px`;
+    el2.style.top = `${top}px`;
+
+    parent.appendChild(el1);
+    parent.appendChild(el2);
+
+    // 튀어오르는 효과
+    el1.classList.add('block-bounce');
+    el2.classList.add('block-bounce');
+    setTimeout(() => {
+        el1.classList.remove('block-bounce');
+        el2.classList.remove('block-bounce');
+    }, 400);
+
+    // 퀴즈 화면일 경우 자동 확인
+    if (currentMode === 'adventure') {
+        checkAdventureGoal();
+    }
+}
+
+// 드래그가 끝났을 때 겹치는 블록끼리 합체하는 로직
+function checkMergeOrDrop(draggedEl) {
+    const parent = draggedEl.parentElement;
+    const blocks = Array.from(parent.querySelectorAll('.numberblock-character'));
+    
+    const dragVal = parseInt(draggedEl.dataset.value);
+    const dragRect = draggedEl.getBoundingClientRect();
+
+    let targetMergeBlock = null;
+    let maxOverlapArea = 0;
+
+    blocks.forEach(block => {
+        if (block === draggedEl) return;
+
+        const blockRect = block.getBoundingClientRect();
+        
+        // 겹치는 영역 계산 (AABB 충돌 감지)
+        const overlapX = Math.max(0, Math.min(dragRect.right, blockRect.right) - Math.max(dragRect.left, blockRect.left));
+        const overlapY = Math.max(0, Math.min(dragRect.bottom, blockRect.bottom) - Math.max(dragRect.top, blockRect.top));
+        const overlapArea = overlapX * overlapY;
+
+        // 겹치는 면적이 일정 수준 이상일 때 합체 대상
+        if (overlapArea > 800 && overlapArea > maxOverlapArea) {
+            maxOverlapArea = overlapArea;
+            targetMergeBlock = block;
+        }
+    });
+
+    if (targetMergeBlock) {
+        const targetVal = parseInt(targetMergeBlock.dataset.value);
+        const nextVal = dragVal + targetVal;
+
+        if (nextVal <= 100) { // 병합 제한을 100까지로 확장
+            const left = parseInt(targetMergeBlock.style.left);
+            const top = parseInt(targetMergeBlock.style.top);
+
+            // 기존 블록 둘 다 지우고
+            draggedEl.remove();
+            targetMergeBlock.remove();
+
+            // 합산된 새 블록 소환
+            const mergedEl = createBlockElement(nextVal);
+            mergedEl.style.left = `${left}px`;
+            mergedEl.style.top = `${top}px`;
+            parent.appendChild(mergedEl);
+            
+            playSound('merge');
+            mergedEl.classList.add('block-bounce');
+            setTimeout(() => mergedEl.classList.remove('block-bounce'), 400);
+
+            // 만약 퀴즈(모험) 모드라면 정답을 검사
+            if (currentMode === 'adventure') {
+                checkAdventureGoal();
+            }
+        } else {
+            // 100이 넘어가면 합쳐지지 않고 통 튕기며 경고 토스트 팝업 노출
+            bounceBack(draggedEl);
+            playSound('split'); // 튕김 효과음
+            showToast("100 넘는 숫자를 만들 수 없어요! 🙅");
+        }
+    } else {
+        // 합쳐지지 않은 일반 드롭 시, 퀴즈 모드에서는 영역 검사 수행
+        if (currentMode === 'adventure') {
+            checkAdventureGoal();
+        }
+    }
+}
+
+function bounceBack(el) {
+    // 튕겨나가는 시각 피드백
+    el.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        el.style.transform = 'none';
+    }, 150);
+}
+
+// 귀여운 알림창 띄우기 함수
+function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+    
+    // 토스트 애니메이션 시간(2.5초) 후 DOM에서 제거
+    setTimeout(() => {
+        toast.remove();
+    }, 2500);
+}
+
+// ==========================================
+// 5. 🪵 자유 놀이터 (Sandbox)
+// ==========================================
+const sandboxPlayzone = document.getElementById('sandbox-playzone');
+
+function initSandbox() {
+    sandboxPlayzone.innerHTML = '';
+}
+
+// 블록 소환 버튼 바인딩
+document.querySelectorAll('#screen-sandbox .spawn-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const num = parseInt(btn.dataset.num);
+        const block = createBlockElement(num);
+        
+        // 📱 모바일/PC 현재 화면의 스크롤 시야(ScrollOffset)를 계산하여 보이는 곳의 정중앙에 소환!
+        const wrapper = document.querySelector('.sandbox-board-wrapper');
+        const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
+        const clientWidth = wrapper ? wrapper.clientWidth : sandboxPlayzone.clientWidth;
+        
+        // 블록의 가로 너비 판정 (이미지 캐릭터는 100px, CSS 2열 형태 블록은 100px, 1열 형태는 50px)
+        const isImgChar = (num >= 0 && num <= 20) || num === 100;
+        const blockWidth = isImgChar ? 100 : ((num === 4 || num === 6 || num === 8 || num === 10) ? 100 : 50);
+        
+        // 현재 바라보고 있는 화면 중앙 좌표 구한 후 ±50px 미세 무작위 흔들림(겹침 방지) 부여
+        const centerLeft = scrollLeft + (clientWidth / 2) - (blockWidth / 2);
+        const finalLeft = Math.max(20, Math.min(1500 - blockWidth - 20, centerLeft + (Math.random() * 100 - 50)));
+        
+        const maxTop = Math.max(100, sandboxPlayzone.clientHeight - 220);
+        const finalTop = Math.random() * maxTop + 20;
+        
+        block.style.left = `${finalLeft}px`;
+        block.style.top = `${finalTop}px`;
+        
+        sandboxPlayzone.appendChild(block);
+        playSound('pop');
+        
+        block.classList.add('block-bounce');
+        setTimeout(() => block.classList.remove('block-bounce'), 400);
+    });
+});
+
+document.getElementById('btn-clear-sandbox').addEventListener('click', () => {
+    sandboxPlayzone.innerHTML = '';
+    playSound('split');
+});
+
+// ==========================================
+// 6. ➕ 더하기 빼기 모험 (Math Adventure - 무한 랜덤 제너레이션 하성 스페셜)
+// ==========================================
+const quizEquation = document.getElementById('quiz-equation');
+const quizVisualZoneNew = document.getElementById('quiz-visual-zone-new');
+const quizChoices = document.getElementById('quiz-choices');
+const stageText = document.getElementById('adventure-stage');
+
+let currentStage = 1;
+let currentStageData = null; 
+let correctCountInSet = 0; // 현재 10문항 세트 내 정답 수
+let isSetFailed = false;     // 현재 10문항 세트 내 오답 발생 여부
+let hasAnsweredCurrent = false; // 현재 문제 응답 여부 (중복방지)
+
+// 단계별 난이도가 뚜렷하게 반영되는 무작위 덧셈/뺄셈 수식 생성기 (음수/0 방지)
+function generateRandomStage() {
+    const isAddition = Math.random() < 0.5;
+    let num1, num2, op, answer;
+    
+    let minLimit = 2;
+    let maxLimit = 10;
+    
+    if (currentStage > 40) {
+        minLimit = 41;
+        maxLimit = 50;
+    } else if (currentStage > 30) {
+        minLimit = 31;
+        maxLimit = 40;
+    } else if (currentStage > 20) {
+        minLimit = 21;
+        maxLimit = 30;
+    } else if (currentStage > 10) {
+        minLimit = 11;
+        maxLimit = 20;
+    }
+    
+    if (isAddition) {
+        op = '+';
+        answer = Math.floor(Math.random() * (maxLimit - minLimit + 1)) + minLimit; 
+        num1 = Math.floor(Math.random() * (answer - 1)) + 1;
+        num2 = answer - num1;
+    } else {
+        op = '-';
+        num1 = Math.floor(Math.random() * (maxLimit - minLimit + 1)) + minLimit;
+        num2 = Math.floor(Math.random() * (num1 - 1)) + 1; 
+        answer = num1 - num2;
+    }
+    
+    return { num1, op, num2, answer };
+}
+
+function initAdventure() {
+    currentStage = 1;
+    correctCountInSet = 0;
+    isSetFailed = false;
+    hasAnsweredCurrent = false;
+    document.getElementById('adventure-success-feedback').classList.add('hidden');
+    
+    // 모험 첫 진입 시 게임 구역을 숨기고 단계 선택기 화면을 띄움
+    document.getElementById('adventure-game-playzone').classList.add('hidden');
+    document.getElementById('adventure-selector-screen').classList.remove('hidden');
+}
+
+function loadStage(stageNum) {
+    currentStage = stageNum;
+    hasAnsweredCurrent = false; // 응답 플래그 리셋
+    
+    // 실시간으로 난이도가 적용된 무작위 문제 생성
+    currentStageData = generateRandomStage();
+    
+    stageText.textContent = stageNum;
+    quizEquation.textContent = `${currentStageData.num1} ${currentStageData.op} ${currentStageData.num2} = ?`;
+
+    // 1. 보조 힌트 이미지 영역 렌더링
+    quizVisualZoneNew.innerHTML = '';
+    
+    const block1 = createBlockElement(currentStageData.num1);
+    const block2 = createBlockElement(currentStageData.num2);
+    
+    // 연산자 텍스트 생성
+    const opSign = document.createElement('div');
+    opSign.className = 'visual-op-sign';
+    opSign.textContent = currentStageData.op === '+' ? '➕' : '➖';
+    opSign.style.fontFamily = 'var(--font-primary)';
+    opSign.style.fontSize = '38px';
+    opSign.style.margin = '0 10px 10px 10px';
+    
+    quizVisualZoneNew.appendChild(block1);
+    quizVisualZoneNew.appendChild(opSign);
+    quizVisualZoneNew.appendChild(block2);
+
+    // 2. 4지선다 객관식 보기 생성
+    quizChoices.innerHTML = '';
+    const choices = generateChoices(currentStageData.answer);
+    
+    choices.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = val;
+        
+        btn.addEventListener('click', (e) => {
+            if (hasAnsweredCurrent) return; // 이미 답했으면 무시
+            hasAnsweredCurrent = true;
+            
+            if (val === currentStageData.answer) {
+                // 정답인 경우
+                handleCorrectAnswer(currentStageData.answer);
+            } else {
+                // 오답인 경우
+                handleWrongAnswer(btn);
+            }
+        });
+        
+        quizChoices.appendChild(btn);
+    });
+}
+
+// 정답 보기 4개 생성 도우미 (정답 1개 + 정답 주변 무작위 오답 3개 셔플)
+function generateChoices(answer) {
+    const list = new Set();
+    list.add(answer);
+    
+    const upperLimit = Math.max(12, answer + 5);
+    
+    while (list.size < 4) {
+        const offset = Math.floor(Math.random() * 7) - 3; 
+        const decoy = answer + offset;
+        
+        if (decoy > 0 && decoy <= upperLimit && decoy !== answer) {
+            list.add(decoy);
+        }
+    }
+    
+    return Array.from(list).sort(() => Math.random() - 0.5);
+}
+
+// 정답 연출
+function handleCorrectAnswer(answerVal) {
+    correctCountInSet++; // 세트 내 정답 개수 누적
+    
+    const feedbackLayer = document.getElementById('adventure-success-feedback');
+    const blockDisplay = document.getElementById('feedback-block-display');
+    const bubbleText = document.getElementById('feedback-bubble-text');
+    
+    // 매 정답마다 3가지 칭찬 멘트와 음성이 단계 구분 없이 순서대로 번갈아가며 순환 출력!
+    const praise = praiseRotationList[currentPraiseIndex];
+    
+    playGoodJob(praise.audioSrc, praise.gain || 1.0);
+    bubbleText.textContent = praise.text;
+    
+    // 다음 정답 시 다음 칭찬 멘트/음성이 턴제로 순환
+    currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+    
+    blockDisplay.innerHTML = '';
+    const answerBlock = createBlockElement(answerVal);
+    // 원래 신나는 표정으로 통통
+    blockDisplay.appendChild(answerBlock);
+    
+    feedbackLayer.classList.remove('hidden');
+    
+    setTimeout(() => {
+        feedbackLayer.classList.add('hidden');
+        checkNextQuizStep();
+    }, 2500);
+}
+
+// 오답 연출 (즉시 해설 제공 및 다음 문제로 진행)
+function handleWrongAnswer(buttonEl) {
+    playSound('split'); // 오답 효과음
+    isSetFailed = true; // 세트 내 오답 발생 체크
+    
+    // 선택한 오답 버튼 붉은색 셰이크 효과
+    buttonEl.classList.add('shake-anim');
+    buttonEl.style.backgroundColor = '#ff5e3a';
+    
+    const feedbackLayer = document.getElementById('adventure-success-feedback');
+    const blockDisplay = document.getElementById('feedback-block-display');
+    const bubbleText = document.getElementById('feedback-bubble-text');
+    
+    // 오답 전용 말풍선 텍스트 작성 (정답 안내)
+    bubbleText.textContent = `아쉬워요! 정답은 ${currentStageData.answer}입니다. 😢`;
+    
+    blockDisplay.innerHTML = '';
+    const answerBlock = createBlockElement(currentStageData.answer);
+    answerBlock.classList.add('sad-face'); // 슬픈 표정 클래스 부여! (힝구 우는 얼굴)
+    blockDisplay.appendChild(answerBlock);
+    
+    feedbackLayer.classList.remove('hidden');
+    
+    setTimeout(() => {
+        feedbackLayer.classList.add('hidden');
+        buttonEl.classList.remove('shake-anim');
+        buttonEl.style.backgroundColor = '';
+        checkNextQuizStep();
+    }, 2500);
+}
+
+// 다음 퀴즈 진행 및 세트 만점 여부 체크 분기 로직
+function checkNextQuizStep() {
+    const nextStage = currentStage + 1;
+    
+    // 10문제 단위 고정 세트가 만료되었을 때 (즉, 10, 20, 30, 40, 50번 문제를 방금 풀었을 때)
+    if (nextStage > 1 && (nextStage - 1) % 10 === 0) {
+        
+        // ❌ 단 하나라도 오답이 있었던 경우 (과락 패널티 부여)
+        if (isSetFailed) {
+            // 실패 모달을 띄우고, 단계 시작 번호(예: 1, 11, 21...)로 롤백 예약
+            currentStage = nextStage - 10;
+            showFailureModal(correctCountInSet, nextStage - 10);
+        }
+        // 👑 10문제 모두 맞춘 경우 (승급 성공!)
+        else {
+            if (nextStage > 50) {
+                // 5단계 완전 정복 달성
+                currentStage = nextStage; // 51단계 (끝내기 트리거)
+                showFinalSuccessModal(50);
+            } else {
+                // 10, 20, 30, 40단계 마일스톤 돌파
+                currentStage = nextStage; // 다음 단계 예약
+                showMilestoneSuccessModal(nextStage - 1);
+            }
+        }
+    } 
+    // 세트가 진행 중일 때
+    else {
+        loadStage(nextStage);
+    }
+}
+
+// [과락 실패 모달] 하나라도 틀렸을 때 호출하여 세트 롤백
+function showFailureModal(correctCount, startStageOfSet) {
+    playSound('split');
+    
+    const modal = document.getElementById('modal-success');
+    const rewardCharZone = document.getElementById('modal-reward-character');
+    const modalText = document.getElementById('modal-text');
+    const modalTitle = document.getElementById('modal-title');
+    const nextBtn = document.getElementById('modal-next-btn');
+    
+    nextBtn.textContent = '다시 시도하기 🔁';
+    nextBtn.style.backgroundColor = '#f39c12'; // 경고 주황빛
+    
+    // 슬픈 10 블록 렌더링
+    rewardCharZone.innerHTML = '';
+    const sad10 = createBlockElement(10);
+    sad10.classList.add('sad-face');
+    rewardCharZone.appendChild(sad10);
+    
+    modalTitle.textContent = '😢 다시 도전해 봐요! 😢';
+    modalText.innerHTML = `10문항 중 <strong>${correctCount}개</strong>를 맞췄어요.<br>10문제를 다 맞아야 다음 단계로 갈 수 있어요.<br><strong>다시 시도해 보세요! 🔁</strong>`;
+    
+    modal.classList.remove('hidden');
+}
+
+// [중간 마일스톤 축하 모달] 10, 20, 30, 40단계 완료 시 호출 (2줄로 정상 출력되는 10 블록 제공)
+function showMilestoneSuccessModal(clearedCount) {
+    playSound('success');
+    triggerConfetti(); // 🎉 폭죽 발사!
+    
+    const modal = document.getElementById('modal-success');
+    const rewardCharZone = document.getElementById('modal-reward-character');
+    const modalText = document.getElementById('modal-text');
+    const modalTitle = document.getElementById('modal-title');
+    const nextBtn = document.getElementById('modal-next-btn');
+    
+    // 버튼 스타일 및 텍스트 원상태 복원
+    nextBtn.textContent = '다음으로 가기 ➔';
+    nextBtn.style.backgroundColor = ''; 
+    
+    rewardCharZone.innerHTML = '';
+    const reward10 = createBlockElement(10);
+    rewardCharZone.appendChild(reward10);
+    
+    modalTitle.textContent = '🎉 마일스톤 달성! 🎉';
+    modalText.innerHTML = `축하합니다!<br>벌써 <strong>${clearedCount}단계</strong>까지 수학 모험을 완료했어요!<br><strong>하성이가 정말 대단해요! 👍</strong>`;
+    
+    modal.classList.remove('hidden');
+}
+
+// [최종 50단계 완전 정복 모달] 5단계 마스터 시 호출
+function showFinalSuccessModal(clearedCount) {
+    playSound('success');
+    triggerConfetti(); // 🎉 폭죽 발사!
+    
+    const modal = document.getElementById('modal-success');
+    const rewardCharZone = document.getElementById('modal-reward-character');
+    const modalText = document.getElementById('modal-text');
+    const modalTitle = document.getElementById('modal-title');
+    const nextBtn = document.getElementById('modal-next-btn');
+    
+    // 버튼 텍스트를 "끝내기"로 변경하고 눈에 띄는 색으로 강조
+    nextBtn.textContent = '끝내기 🏠';
+    nextBtn.style.backgroundColor = '#ff5e3a';
+    
+    // 최종 마스터 보상: 영광의 황금 왕관 100 블록!
+    rewardCharZone.innerHTML = '';
+    const gold100 = createBlockElement(100);
+    rewardCharZone.appendChild(gold100);
+    
+    modalTitle.textContent = '👑 모험 완전 정복! 👑';
+    modalText.innerHTML = `축하합니다!<br>최고 난이도 5단계(50문제)를 완벽하게 마스터했어요!<br><strong>하성이가 세계 최고의 수학 대장입니다! 🏆🥇</strong>`;
+    
+    modal.classList.remove('hidden');
+}
+
+// 모달 다음 버튼 (모달을 닫고 다시 세트 시작 or 다음 단계 진입 or 최종 클리어 시 홈으로 복귀)
+document.getElementById('modal-next-btn').addEventListener('click', () => {
+    document.getElementById('modal-success').classList.add('hidden');
+    
+    // 모달을 닫는 시점에 세트 스코어 초기화
+    correctCountInSet = 0;
+    isSetFailed = false;
+    
+    if (currentStage > 50) {
+        switchMode('home');
+    } else {
+        loadStage(currentStage); // 예약된 단계(롤백된 시작점 또는 다음 승격 단계) 로드
+    }
+});
+
+// ==========================================
+// 7. ✍️ 숫자 쓰기 연습 (Number Tracing)
+// ==========================================
+const canvas = document.getElementById('tracing-canvas');
+const ctx = canvas.getContext('2d');
+const tracingFeedback = document.getElementById('tracing-feedback');
+const rewardZone = document.getElementById('tracing-reward-zone');
+
+// 숫자별 드로잉 가이드 패스 좌표 데이터 (500x500 캔버스 기준)
+// 각 획(Stroke)별로 촘촘하고 곡선이 매끄럽게 연결되도록 포인트를 조밀하게 정의
+const numberGuides = {
+    1: [
+        [{ x: 250, y: 120 }, { x: 250, y: 160 }, { x: 250, y: 200 }, { x: 250, y: 240 }, { x: 250, y: 280 }, { x: 250, y: 320 }, { x: 250, y: 360 }, { x: 250, y: 400 }]
+    ],
+    2: [
+        [
+            { x: 180, y: 180 }, { x: 185, y: 160 }, { x: 200, y: 140 }, { x: 220, y: 130 }, { x: 250, y: 125 }, 
+            { x: 280, y: 130 }, { x: 300, y: 140 }, { x: 315, y: 160 }, { x: 320, y: 180 }, { x: 315, y: 205 }, 
+            { x: 300, y: 230 }, { x: 275, y: 260 }, { x: 245, y: 295 }, { x: 215, y: 335 }, { x: 180, y: 380 }, 
+            { x: 215, y: 380 }, { x: 250, y: 380 }, { x: 285, y: 380 }, { x: 320, y: 380 }
+        ]
+    ],
+    3: [
+        [
+            { x: 180, y: 150 }, { x: 195, y: 135 }, { x: 220, y: 125 }, { x: 250, y: 120 }, { x: 280, y: 125 }, 
+            { x: 305, y: 135 }, { x: 320, y: 155 }, { x: 320, y: 175 }, { x: 305, y: 195 }, { x: 280, y: 205 }, 
+            { x: 250, y: 210 }, { x: 280, y: 215 }, { x: 305, y: 225 }, { x: 320, y: 245 }, { x: 325, y: 270 }, 
+            { x: 320, y: 295 }, { x: 305, y: 320 }, { x: 280, y: 335 }, { x: 250, y: 340 }, { x: 220, y: 335 }, 
+            { x: 195, y: 320 }, { x: 180, y: 305 }
+        ]
+    ],
+    4: [
+        // 1획: 대각선 하강 후 가로 꺾기
+        [
+            { x: 280, y: 100 }, { x: 255, y: 145 }, { x: 230, y: 190 }, { x: 205, y: 235 }, { x: 180, y: 280 }, 
+            { x: 220, y: 280 }, { x: 260, y: 280 }, { x: 300, y: 280 }, { x: 340, y: 280 }
+        ],
+        // 2획: 세로선
+        [
+            { x: 280, y: 200 }, { x: 280, y: 250 }, { x: 280, y: 300 }, { x: 280, y: 350 }, { x: 280, y: 400 }
+        ]
+    ],
+    5: [
+        // 1획: 세로 하강 후 매끄러운 오른쪽 곡선 고리
+        [
+            { x: 200, y: 130 }, { x: 195, y: 180 }, { x: 190, y: 230 }, { x: 215, y: 230 }, { x: 245, y: 230 }, 
+            { x: 275, y: 235 }, { x: 300, y: 250 }, { x: 315, y: 275 }, { x: 320, y: 300 }, { x: 315, y: 325 }, 
+            { x: 300, y: 350 }, { x: 275, y: 365 }, { x: 245, y: 370 }, { x: 215, y: 365 }, { x: 190, y: 350 }, 
+            { x: 180, y: 335 }
+        ],
+        // 2획: 지붕 가로선
+        [
+            { x: 200, y: 130 }, { x: 240, y: 130 }, { x: 280, y: 130 }, { x: 320, y: 130 }
+        ]
+    ],
+    6: [
+        [
+            { x: 300, y: 130 }, { x: 270, y: 145 }, { x: 240, y: 165 }, { x: 215, y: 190 }, { x: 195, y: 220 }, 
+            { x: 180, y: 255 }, { x: 173, y: 290 }, { x: 175, y: 325 }, { x: 185, y: 355 }, { x: 205, y: 375 }, 
+            { x: 230, y: 388 }, { x: 260, y: 390 }, { x: 290, y: 380 }, { x: 310, y: 360 }, { x: 320, y: 330 }, 
+            { x: 320, y: 300 }, { x: 310, y: 270 }, { x: 290, y: 250 }, { x: 260, y: 240 }, { x: 230, y: 242 }, 
+            { x: 205, y: 255 }, { x: 185, y: 275 }, { x: 175, y: 300 }
+        ]
+    ],
+    7: [
+        // 1획: 위(170, 140)에서 아래(170, 175)로 수직 하강 삐침선
+        [{ x: 170, y: 140 }, { x: 170, y: 155 }, { x: 170, y: 175 }],
+        // 2획: 꼭대기(170, 140)에서 새롭게 시작해 우측 가로선 후 대각선 아래로 길게 하강
+        [
+            { x: 170, y: 140 }, { x: 207, y: 140 }, { x: 245, y: 140 }, { x: 282, y: 140 }, { x: 320, y: 140 }, 
+            { x: 300, y: 183 }, { x: 280, y: 226 }, { x: 260, y: 269 }, { x: 240, y: 312 }, { x: 220, y: 355 }, { x: 200, y: 400 }
+        ]
+    ],
+    8: [
+        // 수학적으로 정확히 대칭 보정된 상하 눈사람 형태의 8 궤적 (시작: 3시 정측면)
+        [
+            { x: 315, y: 185 }, { x: 307, y: 150 }, { x: 285, y: 128 }, { x: 250, y: 120 }, { x: 215, y: 128 }, 
+            { x: 193, y: 150 }, { x: 185, y: 185 }, { x: 193, y: 220 }, { x: 215, y: 242 }, { x: 250, y: 250 }, 
+            { x: 285, y: 258 }, { x: 307, y: 280 }, { x: 315, y: 315 }, { x: 307, y: 350 }, { x: 285, y: 372 }, 
+            { x: 250, y: 380 }, { x: 215, y: 372 }, { x: 193, y: 350 }, { x: 185, y: 315 }, { x: 193, y: 280 }, 
+            { x: 215, y: 258 }, { x: 250, y: 250 }, { x: 285, y: 242 }, { x: 307, y: 220 }, { x: 315, y: 185 }
+        ]
+    ],
+    9: [
+        [
+            { x: 300, y: 220 }, { x: 300, y: 200 }, { x: 305, y: 175 }, { x: 300, y: 152 }, { x: 290, y: 133 }, 
+            { x: 270, y: 122 }, { x: 245, y: 120 }, { x: 220, y: 124 }, { x: 202, y: 138 }, { x: 192, y: 160 }, 
+            { x: 192, y: 180 }, { x: 202, y: 202 }, { x: 220, y: 220 }, { x: 240, y: 228 }, { x: 265, y: 230 }, 
+            { x: 285, y: 227 }, { x: 300, y: 220 }, { x: 300, y: 270 }, { x: 300, y: 310 }, { x: 300, y: 350 }, { x: 300, y: 400 }
+        ]
+    ],
+    10: [
+        // 1획: '1'
+        [
+            { x: 180, y: 120 }, { x: 180, y: 176 }, { x: 180, y: 232 }, { x: 180, y: 288 }, { x: 180, y: 344 }, { x: 180, y: 400 }
+        ],
+        // 2획: '0'
+        [
+            { x: 320, y: 150 }, { x: 300, y: 158 }, { x: 282, y: 180 }, { x: 270, y: 215 }, { x: 268, y: 260 }, 
+            { x: 270, y: 305 }, { x: 282, y: 340 }, { x: 300, y: 362 }, { x: 320, y: 370 }, { x: 340, y: 362 }, 
+            { x: 358, y: 340 }, { x: 370, y: 305 }, { x: 372, y: 260 }, { x: 370, y: 215 }, { x: 358, y: 180 }, 
+            { x: 340, y: 158 }, { x: 320, y: 150 }
+        ]
+    ]
+};
+
+function initTracing() {
+    isDrawing = false;
+    isSuccessState = false;
+    drawPoints = [];
+    completedStrokes = [];
+    currentStrokeIndex = 0;
+    nextTargetPointIndex = 0;
+
+    // 현재 설정된 currentTracingNum에 해당하는 버튼 활성화 보장
+    document.querySelectorAll('.num-select-btn').forEach(btn => {
+        if (parseInt(btn.dataset.num) === currentTracingNum) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // UI 초기화 및 현재 선택된 캐릭터 미리보기 렌더링
+    tracingFeedback.classList.add('hidden');
+    if (rewardZone) {
+        rewardZone.innerHTML = '';
+        const previewBlock = createBlockElement(currentTracingNum);
+        previewBlock.style.position = 'relative';
+        previewBlock.style.left = '0';
+        previewBlock.style.top = '0';
+        rewardZone.appendChild(previewBlock);
+    }
+    
+    // 화면 크기 변화 및 CSS transition 레이아웃이 끝난 시점에 맞추어 안전하게 캔버스 렌더링
+    requestAnimationFrame(() => {
+        drawCanvasTemplate();
+    });
+}
+
+// 캔버스의 좌표들을 부드러운 곡선(Bezier) 스타일로 렌더링해주는 도우미 함수
+function drawBezierStroke(points, strokeStyle, lineWidth, isDashed = false) {
+    if (!points || points.length === 0) return;
+    
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (isDashed) {
+        ctx.setLineDash([10, 10]);
+    } else {
+        ctx.setLineDash([]);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    if (points.length < 3) {
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+    } else {
+        // Quadratic Curve 보간 적용
+        for (let i = 1; i < points.length - 2; i++) {
+            const xc = (points[i].x + points[i + 1].x) / 2;
+            const yc = (points[i].y + points[i + 1].y) / 2;
+            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+        }
+        // 마지막 포인트 마무리를 매끄럽게 처리
+        const len = points.length;
+        ctx.quadraticCurveTo(points[len - 2].x, points[len - 2].y, points[len - 1].x, points[len - 1].y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]); // 원복
+}
+
+// 캔버스 가이드라인 렌더링
+function drawCanvasTemplate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const strokes = numberGuides[currentTracingNum];
+    
+    // 1. 전체 숫자 실루엣 가이드 그리기 (회색 두꺼운 펜선 - 곡선 보간)
+    strokes.forEach(stroke => {
+        drawBezierStroke(stroke, '#e2e8f0', 45);
+    });
+
+    // 2. 이미 그린 과거 완료 획들 렌더링 (연두색)
+    completedStrokes.forEach(strokePoints => {
+        drawBezierStroke(strokePoints, '#4cd964', 14);
+    });
+
+    // 3. 현재 써야 할 활성 획의 중심 점선 가이드 그리기 (하늘색 대시)
+    if (currentStrokeIndex < strokes.length) {
+        const activeStroke = strokes[currentStrokeIndex];
+        drawBezierStroke(activeStroke, '#b5e2ff', 4, true);
+
+        // 현재 획에서 도달해야 하는 빨간 시작/체크 포인트 지시등 표시
+        if (nextTargetPointIndex < activeStroke.length) {
+            const nextPt = activeStroke[nextTargetPointIndex];
+            ctx.fillStyle = '#ff3b30';
+            ctx.beginPath();
+            ctx.arc(nextPt.x, nextPt.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 이번 획의 최초 시작 좌표면 텍스트 힌트 띄우기
+            if (nextTargetPointIndex === 0) {
+                ctx.fillStyle = '#ff3b30';
+                ctx.font = 'bold 16px Gowun Dodum';
+                ctx.fillText('여기서 시작!', nextPt.x - 40, nextPt.y - 25);
+            }
+        }
+    }
+}
+
+// 터치펜/손가락 그리기 핸들러 (Pointer Events 활용)
+canvas.addEventListener('pointerdown', (e) => {
+    if (isSuccessState) return; // 성공 상태 연출 중에는 입력 방지
+    
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    
+    // 캔버스 크기 비율 스케일 보정
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // 현재 쓰고 있는 획의 포인트들만 담아 시작
+    drawPoints = [{ x, y }];
+    nextTargetPointIndex = 0; // 펜을 새로 대면 현재 획의 체크포인트 추적을 처음부터 시작
+    
+    canvas.setPointerCapture(e.pointerId);
+    checkTracingPoint(x, y);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+    if (!isDrawing || isSuccessState) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    drawPoints.push({ x, y });
+    playSound('draw');
+
+    // 실시간 드로잉 렌더링
+    drawUserPath();
+    
+    // 실시간 경로 검사
+    checkTracingPoint(x, y);
+});
+
+canvas.addEventListener('pointerup', (e) => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    canvas.releasePointerCapture(e.pointerId);
+
+    // 선을 뗐을 때 획 완료 상태 검사
+    evaluateTracing();
+});
+
+// 사용자가 현재 그리고 있는 실시간 궤적 렌더링 (곡선 보간 적용)
+function drawUserPath() {
+    drawCanvasTemplate(); // 템플릿 복구 (가이드 및 기완성 획)
+    
+    if (drawPoints.length > 0) {
+        drawBezierStroke(drawPoints, '#4cd964', 14);
+    }
+}
+
+// 터치펜 포인트가 다음 가이드 체크포인트에 닿았는지 판정 (실시간으로 체크포인트 인덱스만 전진)
+function checkTracingPoint(x, y) {
+    const strokes = numberGuides[currentTracingNum];
+    if (currentStrokeIndex >= strokes.length) return;
+
+    const activeStroke = strokes[currentStrokeIndex];
+    if (nextTargetPointIndex >= activeStroke.length) return;
+
+    const targetPt = activeStroke[nextTargetPointIndex];
+    const dist = Math.hypot(x - targetPt.x, y - targetPt.y);
+
+    // 45픽셀 범위 이내로 도달 시 체크포인트 도달 완료로 인정
+    if (dist < 45) {
+        nextTargetPointIndex++;
+        drawUserPath();
+    }
+}
+
+// 펜을 떼었을 때 현재 획의 완료 상태를 검증하고 안전하게 다음 획으로 갱신
+function evaluateTracing() {
+    const strokes = numberGuides[currentTracingNum];
+    if (currentStrokeIndex >= strokes.length) return;
+
+    const activeStroke = strokes[currentStrokeIndex];
+
+    // 1. 현재 활성 획의 모든 가이드 체크포인트를 정상적으로 통과했는가?
+    const passedAllCheckpoints = nextTargetPointIndex >= activeStroke.length;
+    
+    // 2. [가장 중요] 사용자가 펜을 뗀 최종 종단 위치가 가이드 획의 마지막 목적 좌표와 충분히 가까운가?
+    let reachedEnd = false;
+    if (drawPoints.length > 0) {
+        const lastDrawPoint = drawPoints[drawPoints.length - 1];
+        const lastTargetPoint = activeStroke[activeStroke.length - 1];
+        const distToEnd = Math.hypot(lastDrawPoint.x - lastTargetPoint.x, lastDrawPoint.y - lastTargetPoint.y);
+        
+        // 최종 획 마무리에 대해 넉넉한 70px 이내의 터치 오차 허용
+        if (distToEnd < 70) {
+            reachedEnd = true;
+        }
+    }
+
+    // 두 개의 조건이 모두 부합해야만 진짜 정상 필기로 인정
+    if (passedAllCheckpoints && reachedEnd) {
+        completedStrokes.push([...drawPoints]);
+        playSound('pop'); // 획 완성음 (통!)
+        currentStrokeIndex++;
+        nextTargetPointIndex = 0;
+        drawPoints = [];
+
+        // 마지막 획까지 전부 완료했는지 확인
+        if (currentStrokeIndex >= strokes.length) {
+            isDrawing = false;
+            successTracing();
+        } else {
+            // 다음 획 작성을 위해 화면 갱신 (펜을 완전히 뗀 시점에 안전하게 다음 획으로 전환)
+            drawCanvasTemplate();
+        }
+    } else {
+        // 끝까지 다 긋지 않은 상태에서 터치가 유실되었거나 끊겼다면, 오작동 방지를 위해 현재 획 리셋
+        drawPoints = [];
+        nextTargetPointIndex = 0;
+        drawCanvasTemplate();
+    }
+}
+
+function successTracing() {
+    isSuccessState = true;
+    playSound('success');
+    
+    // 성공 피드백 배너 활성화
+    tracingFeedback.classList.remove('hidden');
+    
+    // 보상 넘버블록 캐릭터 렌더링
+    rewardZone.innerHTML = '';
+    const block = createBlockElement(currentTracingNum);
+    block.style.position = 'relative';
+    block.style.left = '0';
+    block.style.top = '0';
+    
+    rewardZone.appendChild(block);
+    block.classList.add('block-bounce');
+
+    // 2초 후에 성공 메시지 제거 및 자동으로 다음 숫자로 이동
+    setTimeout(() => {
+        tracingFeedback.classList.add('hidden');
+        isSuccessState = false;
+        
+        // 다음 숫자로 자동 전환 (10번 완료 시 다시 1번으로 순환)
+        if (currentTracingNum < 10) {
+            currentTracingNum++;
+        } else {
+            currentTracingNum = 1;
+        }
+        initTracing();
+    }, 2000);
+}
+
+// 숫자 선택 핸들러
+document.querySelectorAll('.num-select-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.num-select-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        
+        currentTracingNum = parseInt(e.currentTarget.dataset.num);
+        initTracing();
+    });
+});
+
+// 숫자 쓰기 초기화는 상단 숫자 선택 시 또는 획 실패 시 자동으로 트리거됩니다.
+
+// ==========================================
+// 8. 보호자 비밀번호 잠금 처리 (0608)
+// ==========================================
+let inputPin = "";
+
+function initLockScreen() {
+    const lockScreen = document.getElementById('screen-lock');
+    const lockBox = document.querySelector('.lock-box');
+    const lockErrorMsg = document.getElementById('lock-error-msg');
+    const dots = document.querySelectorAll('.password-display .dot');
+
+    // 이미 세션 내에서 잠금 해제했었다면 즉시 잠금해제 상태 적용
+    if (sessionStorage.getItem('unlocked') === 'true') {
+        lockScreen.classList.add('unlocked');
+    }
+
+    // 잠금 화면 내의 키패드 버튼 이벤트 연결
+    document.querySelectorAll('.lock-screen .key-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const key = btn.dataset.key;
+            initAudio(); // 첫 터치 시 사운드 컨텍스트 활성화
+
+            if (key === 'C') {
+                inputPin = "";
+                updateDots();
+                playSound('split');
+            } else if (key === 'OK') {
+                submitPin();
+            } else {
+                if (inputPin.length < 4) {
+                    inputPin += key;
+                    updateDots();
+                    playSound('pop');
+
+                    // 4자리가 차면 자동으로 제출 검사
+                    if (inputPin.length === 4) {
+                        setTimeout(submitPin, 150);
+                    }
+                }
+            }
+        });
+    });
+
+    function updateDots() {
+        dots.forEach((dot, idx) => {
+            if (idx < inputPin.length) {
+                dot.classList.add('filled');
+            } else {
+                dot.classList.remove('filled');
+            }
+        });
+        lockErrorMsg.classList.add('hidden');
+    }
+
+    function submitPin() {
+        if (inputPin === "0608") {
+            playSound('success');
+            lockScreen.classList.add('unlocked');
+            sessionStorage.setItem('unlocked', 'true');
+            playBgm(); // 비번 입력 후 게임 시작 시 BGM 재생!
+            setBgmVolume(BGM_VOLUME_HIGH); // 메뉴(홈) 화면이므로 소리 크게
+        } else {
+            playSound('split');
+            lockErrorMsg.classList.remove('hidden');
+            
+            // 비밀번호 틀림 셰이크 애니메이션 효과
+            lockBox.classList.add('shake-anim');
+            setTimeout(() => {
+                lockBox.classList.remove('shake-anim');
+            }, 300);
+
+            inputPin = "";
+            updateDots();
+        }
+    }
+}
+
+// ==========================================
+// 6-A. 더하기 빼기 모험 단계 선택기 이벤트 연결
+// ==========================================
+// 1) 난이도 버튼 클릭 이벤트 바인딩
+document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        playSound('pop');
+        const startStage = parseInt(e.currentTarget.dataset.startStage);
+        
+        // 해당 선택 단계에서 퀴즈 시작!
+        currentStage = startStage;
+        
+        // selector 숨기고 playzone 노출
+        document.getElementById('adventure-selector-screen').classList.add('hidden');
+        document.getElementById('adventure-game-playzone').classList.remove('hidden');
+        setBgmVolume(BGM_VOLUME_LOW); // 덧셈/뺄셈 퀴즈 과정: 소리 작게
+        
+        loadStage(currentStage);
+    });
+});
+
+// 2) 게임 플레이존 헤더의 "단계 선택" 뒤로가기 버튼 이벤트 바인딩
+document.getElementById('adventure-to-selector-btn').addEventListener('click', () => {
+    playSound('split');
+    // playzone 숨기고 selector 노출
+    document.getElementById('adventure-game-playzone').classList.add('hidden');
+    document.getElementById('adventure-selector-screen').classList.remove('hidden');
+    setBgmVolume(BGM_VOLUME_HIGH); // 단계 선택 메뉴 복귀: 소리 크게
+});
+
+// ==========================================
+// 9. 앱 초기 구동
+// ==========================================
+window.addEventListener('load', () => {
+    initLockScreen();
+    switchMode('home');
+    if (sessionStorage.getItem('unlocked') === 'true') {
+        playBgm();
+    }
+});
+
+// 터치/클릭 등 첫 사용자 조작 시 BGM 재생 보장 (브라우저 자동재생 제약 대응)
+window.addEventListener('pointerdown', () => {
+    if (sessionStorage.getItem('unlocked') === 'true' && soundEnabled) {
+        playBgm();
+    }
+}, { once: false });
+
+// ==========================================
+// 🎉 화려한 폭죽 애니메이션 (Confetti Effect)
+// ==========================================
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+
+let confettiParticles = [];
+let confettiAnimationId = null;
+let confettiTimeoutId = null;
+
+// 창 크기 조절 대응
+function resizeConfettiCanvas() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeConfettiCanvas);
+resizeConfettiCanvas();
+
+const CONFETTI_COLORS = ['#ff4d4d', '#ff9f1a', '#fecb2f', '#2ecc71', '#3498db', '#9b59b6', '#e67e22', '#ff73b3'];
+
+class ConfettiParticle {
+    constructor() {
+        this.x = confettiCanvas.width / 2; // 화면 중앙 하단에서 분수처럼 뿜어냄
+        this.y = confettiCanvas.height + 20;
+        this.size = Math.random() * 8 + 6;
+        
+        // 위쪽 방향으로 발사 속도 및 랜덤 퍼짐각도 설정
+        const angle = Math.random() * Math.PI / 3 + Math.PI / 3; // 60도 ~ 120도 사이 (위쪽 부채꼴)
+        const speed = Math.random() * 12 + 10;
+        
+        this.vx = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
+        this.vy = -Math.sin(angle) * speed;
+        
+        this.color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 4 - 2;
+        this.opacity = 1;
+        this.gravity = 0.25;
+    }
+    
+    update() {
+        this.vy += this.gravity; // 중력 가속도
+        this.x += this.vx;
+        this.y += this.vy;
+        this.rotation += this.rotationSpeed;
+        
+        // 뿜어져 나간 뒤 하강 단계에서 점진적으로 투명도 감소
+        if (this.vy > 0) {
+            this.opacity -= 0.015;
+        }
+    }
+    
+    draw() {
+        confettiCtx.save();
+        confettiCtx.translate(this.x, this.y);
+        confettiCtx.rotate(this.rotation * Math.PI / 180);
+        confettiCtx.globalAlpha = this.opacity;
+        confettiCtx.fillStyle = this.color;
+        
+        // 사각형 리본 모양 파티클
+        confettiCtx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+        confettiCtx.restore();
+    }
+}
+
+// 폭죽 발사 트리거 함수
+function triggerConfetti() {
+    // 기존 애니메이션 루프 종료 및 리셋
+    cancelAnimationFrame(confettiAnimationId);
+    clearTimeout(confettiTimeoutId);
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    confettiParticles = [];
+    
+    // 폭죽 160개 생성
+    for (let i = 0; i < 160; i++) {
+        confettiParticles.push(new ConfettiParticle());
+    }
+    
+    animateConfetti();
+    
+    // 4초 후 서서히 완전 종료
+    confettiTimeoutId = setTimeout(() => {
+        cancelAnimationFrame(confettiAnimationId);
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }, 4500);
+}
+
+function animateConfetti() {
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    
+    // 입자 업데이트 및 렌더링
+    for (let i = confettiParticles.length - 1; i >= 0; i--) {
+        const p = confettiParticles[i];
+        p.update();
+        p.draw();
+        
+        // 화면을 벗어나거나 투명해진 조각 제거
+        if (p.y > confettiCanvas.height + 50 || p.opacity <= 0) {
+            confettiParticles.splice(i, 1);
+        }
+    }
+    
+    if (confettiParticles.length > 0) {
+        confettiAnimationId = requestAnimationFrame(animateConfetti);
+    }
+}
