@@ -45,8 +45,8 @@ bgm.addEventListener('ended', playNextBgmTrack);
 // 🎵 3가지 칭찬 멘트 및 음성 턴제 순환 플레이리스트
 const praiseRotationList = [
     { audioSrc: './goodjob.mp3', text: '하성아 잘했어! 👑', gain: 1.0 },
-    { audioSrc: './goodjob2.mp3', text: '하성아 GoodJob! 💎', gain: 1.8 },
-    { audioSrc: './goodjob3.mp3', text: 'Excellent! 하성! 🔥', gain: 3.0 }
+    { audioSrc: './goodjob2.mp3', text: '하성아 GoodJob! 💎', gain: 1.5 },
+    { audioSrc: './goodjob3.mp3', text: 'Excellent! 하성! 🔥', gain: 1.4 }
 ];
 let currentPraiseIndex = 0;
 let goodJobAudio = null;
