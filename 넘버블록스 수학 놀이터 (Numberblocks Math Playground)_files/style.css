@@ -1950,40 +1950,59 @@ main {
         border-radius: 10px !important;
     }
     
-    /* 더하기 빼기 모험 모바일 대응 */
+    /* 더하기 빼기 모험 모바일 대응 및 세로 스크롤 최적화 */
+    #screen-adventure {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .adventure-game-playzone {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 25px !important;
+    }
+
     .quiz-equation {
-        font-size: 32px !important;
-        padding: 8px 25px !important;
+        font-size: 26px !important;
+        padding: 6px 20px !important;
         border-width: 3px !important;
     }
     
     .quiz-visual-new {
-        flex-direction: column !important; /* 좁은 모바일 폭 극복을 위해 위아래 수직 정렬! */
+        flex-direction: column !important; /* 좁은 모바일 폭 수직 정렬 */
         align-items: center !important;
         justify-content: center !important;
-        min-height: 220px !important;
+        min-height: auto !important;
         height: auto !important;
-        gap: 8px !important;
-        padding: 5px 0 !important;
+        gap: 4px !important;
+        padding: 4px 0 !important;
     }
+
     .quiz-visual-new .numberblock-character {
-        --block-unit: 20px !important; /* 모바일 세로 뷰포트 내 가독성과 넘침 방지 밸런스를 고려해 20px로 상향! */
+        --block-unit: 15px !important;
+    }
+
+    .quiz-visual-new .numberblock-img {
+        height: 85px !important; /* 이미지 캐릭터 세로 컴팩트화로 2개 수직 배치 시 공간 확보 */
+        max-width: 100px !important;
     }
     
     .quiz-visual-new .visual-op-sign {
-        margin: 4px 0 !important;
-        font-size: 26px !important; /* 수직 간섭 최소화를 위해 크기 다듬음 */
+        margin: 2px 0 !important;
+        font-size: 22px !important;
     }
     
     .choices-container {
-        grid-template-columns: repeat(2, 1fr) !important; /* 모바일은 누르기 쉽게 2x2 그리드 배열 */
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
         max-width: 100% !important;
+        margin-top: 10px !important;
+        margin-bottom: 20px !important;
     }
     
     .choice-btn {
-        height: 52px !important;
-        font-size: 22px !important;
+        height: 48px !important;
+        font-size: 20px !important;
         border-radius: 14px !important;
     }
     
