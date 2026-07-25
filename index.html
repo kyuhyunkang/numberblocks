@@ -183,40 +183,66 @@
                 </div>
             </section>
 
-            <!-- 2-D. 숫자 쓰기 연습 화면 (터치 펜 최적화) -->
+            <!-- 2-D. 숫자 쓰기 연습 화면 (터치 펜 최적화 & 1~5단계 난이도) -->
             <section id="screen-tracing" class="screen hidden">
-                <div class="game-header">
-                    <h2>✍️ 숫자 쓰기 연습</h2>
-                    <p class="hint-text">터치 펜이나 손가락으로 가이드 선을 따라 숫자를 써 보세요!</p>
-                </div>
-                <div class="tracing-layout">
-                    <!-- 숫자 선택 사이드바 -->
-                    <div class="number-selector">
-                        <button class="num-select-btn active" data-num="1">1</button>
-                        <button class="num-select-btn" data-num="2">2</button>
-                        <button class="num-select-btn" data-num="3">3</button>
-                        <button class="num-select-btn" data-num="4">4</button>
-                        <button class="num-select-btn" data-num="5">5</button>
-                        <button class="num-select-btn" data-num="6">6</button>
-                        <button class="num-select-btn" data-num="7">7</button>
-                        <button class="num-select-btn" data-num="8">8</button>
-                        <button class="num-select-btn" data-num="9">9</button>
-                        <button class="num-select-btn" data-num="10">10</button>
+                <!-- 1. 난이도 선택 메뉴 화면 -->
+                <div id="tracing-selector-screen" class="adventure-selector-screen">
+                    <h2>✍️ 숫자 쓰기 난이도 선택</h2>
+                    <p class="selector-desc">연습하고 싶은 단계를 선택해 주세요! 🌱</p>
+                    
+                    <div class="difficulty-grid">
+                        <button class="tracing-diff-btn diff-btn" data-start-num="1" data-end-num="10">
+                            <span class="diff-title">1단계 🌱</span>
+                            <span class="diff-info">기초 숫자 (1 ~ 10 쓰기)</span>
+                        </button>
+                        <button class="tracing-diff-btn diff-btn" data-start-num="11" data-end-num="20">
+                            <span class="diff-title">2단계 🌟</span>
+                            <span class="diff-info">10보다 큰 수 (11 ~ 20 쓰기)</span>
+                        </button>
+                        <button class="tracing-diff-btn diff-btn" data-start-num="21" data-end-num="30">
+                            <span class="diff-title">3단계 🔥</span>
+                            <span class="diff-info">20보다 큰 수 (21 ~ 30 쓰기)</span>
+                        </button>
+                        <button class="tracing-diff-btn diff-btn" data-start-num="31" data-end-num="40">
+                            <span class="diff-title">4단계 👑</span>
+                            <span class="diff-info">30보다 큰 수 (31 ~ 40 쓰기)</span>
+                        </button>
+                        <button class="tracing-diff-btn diff-btn" data-start-num="41" data-end-num="50">
+                            <span class="diff-title">5단계 💎</span>
+                            <span class="diff-info">40보다 큰 수 (41 ~ 50 쓰기)</span>
+                        </button>
                     </div>
                     
-                    <!-- 쓰기 캔버스 영역 -->
-                    <div class="canvas-container">
-                        <canvas id="tracing-canvas" width="500" height="500"></canvas>
-                        <!-- 터치 효과나 로딩 안내 등의 레이어 -->
-                        <div id="tracing-feedback" class="hidden">참 잘했어요! 🎉</div>
-                    </div>
+                    <button class="selector-back-btn" onclick="switchMode('home')">메인 홈으로 🏠</button>
+                </div>
 
-                    <!-- 캐릭터 보상 애니메이션 영역 -->
-                    <div class="tracing-reward" id="tracing-reward-zone">
-                        <div class="reward-placeholder">숫자를 예쁘게 쓰면 넘버블록 친구가 나타나요! ✨</div>
+                <!-- 2. 실제 게임 플레이 영역 (처음엔 숨김) -->
+                <div id="tracing-game-playzone" class="tracing-game-playzone hidden">
+                    <div class="game-header">
+                        <div class="header-left-group">
+                            <button class="header-back-btn" id="tracing-to-selector-btn">⬅️ 단계 선택</button>
+                            <h2>✍️ 숫자 쓰기 연습</h2>
+                        </div>
+                        <p class="hint-text">터치 펜이나 손가락으로 가이드 선을 따라 숫자를 써 보세요!</p>
+                    </div>
+                    <div class="tracing-layout">
+                        <!-- 숫자 선택 사이드바 -->
+                        <div class="number-selector" id="tracing-number-selector">
+                        </div>
+                        
+                        <!-- 쓰기 캔버스 영역 -->
+                        <div class="canvas-container">
+                            <canvas id="tracing-canvas" width="500" height="500"></canvas>
+                            <!-- 터치 효과나 로딩 안내 등의 레이어 -->
+                            <div id="tracing-feedback" class="hidden">참 잘했어요! 🎉</div>
+                        </div>
+
+                        <!-- 캐릭터 보상 애니메이션 영역 -->
+                        <div class="tracing-reward" id="tracing-reward-zone">
+                            <div class="reward-placeholder">숫자를 예쁘게 쓰면 넘버블록 친구가 나타나요! ✨</div>
+                        </div>
                     </div>
                 </div>
-                <!-- 🧼 다시 쓰기 버튼은 자동 획 리셋 엔진 탑재로 불필요하여 공간 절약을 위해 제거 완료 -->
             </section>
         </main>
 

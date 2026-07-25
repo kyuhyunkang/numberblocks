@@ -285,8 +285,7 @@ function switchMode(mode) {
     } else if (mode === 'adventure') {
         initAdventure();
     } else if (mode === 'tracing') {
-        currentTracingNum = 1;
-        initTracing();
+        initTracingMode();
         setBgmVolume(BGM_VOLUME_LOW); // 숫자 쓰기 (게임 과정): 작게
     }
 }
@@ -1007,16 +1006,29 @@ document.getElementById('modal-next-btn').addEventListener('click', () => {
 });
 
 // ==========================================
-// 7. ✍️ 숫자 쓰기 연습 (Number Tracing)
+// ==========================================
+// 7. ✍️ 숫자 쓰기 연습 (Number Tracing 1~5단계 지원)
 // ==========================================
 const canvas = document.getElementById('tracing-canvas');
 const ctx = canvas.getContext('2d');
 const tracingFeedback = document.getElementById('tracing-feedback');
 const rewardZone = document.getElementById('tracing-reward-zone');
 
-// 숫자별 드로잉 가이드 패스 좌표 데이터 (500x500 캔버스 기준)
-// 각 획(Stroke)별로 촘촘하고 곡선이 매끄럽게 연결되도록 포인트를 조밀하게 정의
-const numberGuides = {
+let currentTracingStartNum = 1;
+let currentTracingEndNum = 10;
+let currentTracingNum = 1;
+
+// 1~9 및 0 획 가이드 베이스 데이터 (500x500 캔버스 기준)
+const baseDigitGuides = {
+    0: [
+        [
+            { x: 250, y: 120 }, { x: 220, y: 130 }, { x: 195, y: 160 }, { x: 180, y: 210 }, 
+            { x: 175, y: 260 }, { x: 180, y: 310 }, { x: 195, y: 350 }, { x: 220, y: 375 }, 
+            { x: 250, y: 380 }, { x: 280, y: 375 }, { x: 305, y: 350 }, { x: 320, y: 310 }, 
+            { x: 325, y: 260 }, { x: 320, y: 210 }, { x: 305, y: 160 }, { x: 280, y: 130 }, 
+            { x: 250, y: 120 }
+        ]
+    ],
     1: [
         [{ x: 250, y: 120 }, { x: 250, y: 160 }, { x: 250, y: 200 }, { x: 250, y: 240 }, { x: 250, y: 280 }, { x: 250, y: 320 }, { x: 250, y: 360 }, { x: 250, y: 400 }]
     ],
@@ -1038,25 +1050,21 @@ const numberGuides = {
         ]
     ],
     4: [
-        // 1획: 대각선 하강 후 가로 꺾기
         [
             { x: 280, y: 100 }, { x: 255, y: 145 }, { x: 230, y: 190 }, { x: 205, y: 235 }, { x: 180, y: 280 }, 
             { x: 220, y: 280 }, { x: 260, y: 280 }, { x: 300, y: 280 }, { x: 340, y: 280 }
         ],
-        // 2획: 세로선
         [
             { x: 280, y: 200 }, { x: 280, y: 250 }, { x: 280, y: 300 }, { x: 280, y: 350 }, { x: 280, y: 400 }
         ]
     ],
     5: [
-        // 1획: 세로 하강 후 매끄러운 오른쪽 곡선 고리
         [
             { x: 200, y: 130 }, { x: 195, y: 180 }, { x: 190, y: 230 }, { x: 215, y: 230 }, { x: 245, y: 230 }, 
             { x: 275, y: 235 }, { x: 300, y: 250 }, { x: 315, y: 275 }, { x: 320, y: 300 }, { x: 315, y: 325 }, 
             { x: 300, y: 350 }, { x: 275, y: 365 }, { x: 245, y: 370 }, { x: 215, y: 365 }, { x: 190, y: 350 }, 
             { x: 180, y: 335 }
         ],
-        // 2획: 지붕 가로선
         [
             { x: 200, y: 130 }, { x: 240, y: 130 }, { x: 280, y: 130 }, { x: 320, y: 130 }
         ]
@@ -1071,16 +1079,13 @@ const numberGuides = {
         ]
     ],
     7: [
-        // 1획: 위(170, 140)에서 아래(170, 175)로 수직 하강 삐침선
         [{ x: 170, y: 140 }, { x: 170, y: 155 }, { x: 170, y: 175 }],
-        // 2획: 꼭대기(170, 140)에서 새롭게 시작해 우측 가로선 후 대각선 아래로 길게 하강
         [
             { x: 170, y: 140 }, { x: 207, y: 140 }, { x: 245, y: 140 }, { x: 282, y: 140 }, { x: 320, y: 140 }, 
             { x: 300, y: 183 }, { x: 280, y: 226 }, { x: 260, y: 269 }, { x: 240, y: 312 }, { x: 220, y: 355 }, { x: 200, y: 400 }
         ]
     ],
     8: [
-        // 수학적으로 정확히 대칭 보정된 상하 눈사람 형태의 8 궤적 (시작: 3시 정측면)
         [
             { x: 315, y: 185 }, { x: 307, y: 150 }, { x: 285, y: 128 }, { x: 250, y: 120 }, { x: 215, y: 128 }, 
             { x: 193, y: 150 }, { x: 185, y: 185 }, { x: 193, y: 220 }, { x: 215, y: 242 }, { x: 250, y: 250 }, 
@@ -1096,21 +1101,109 @@ const numberGuides = {
             { x: 192, y: 180 }, { x: 202, y: 202 }, { x: 220, y: 220 }, { x: 240, y: 228 }, { x: 265, y: 230 }, 
             { x: 285, y: 227 }, { x: 300, y: 220 }, { x: 300, y: 270 }, { x: 300, y: 310 }, { x: 300, y: 350 }, { x: 300, y: 400 }
         ]
-    ],
-    10: [
-        // 1획: '1'
-        [
-            { x: 180, y: 120 }, { x: 180, y: 176 }, { x: 180, y: 232 }, { x: 180, y: 288 }, { x: 180, y: 344 }, { x: 180, y: 400 }
-        ],
-        // 2획: '0'
-        [
-            { x: 320, y: 150 }, { x: 300, y: 158 }, { x: 282, y: 180 }, { x: 270, y: 215 }, { x: 268, y: 260 }, 
-            { x: 270, y: 305 }, { x: 282, y: 340 }, { x: 300, y: 362 }, { x: 320, y: 370 }, { x: 340, y: 362 }, 
-            { x: 358, y: 340 }, { x: 370, y: 305 }, { x: 372, y: 260 }, { x: 370, y: 215 }, { x: 358, y: 180 }, 
-            { x: 340, y: 158 }, { x: 320, y: 150 }
-        ]
     ]
 };
+
+// 1~50 동적 가이드 좌표 생성기 (1자리 수 및 2자리 수 변환)
+function getGuideForNumber(num) {
+    if (num >= 1 && num <= 9) {
+        return baseDigitGuides[num];
+    }
+    
+    if (num >= 10 && num <= 50) {
+        const tensDigit = Math.floor(num / 10);
+        const unitsDigit = num % 10;
+
+        const tensStrokes = baseDigitGuides[tensDigit] || [];
+        const unitsStrokes = baseDigitGuides[unitsDigit] || [];
+
+        // 십의 자리 수치 매핑 (좌측 X: 160 중심, 스케일 0.70)
+        const tensMapped = tensStrokes.map(stroke => 
+            stroke.map(pt => ({
+                x: Math.round((pt.x - 250) * 0.70 + 160),
+                y: pt.y
+            }))
+        );
+
+        // 일의 자리 수치 매핑 (우측 X: 340 중심, 스케일 0.70)
+        const unitsMapped = unitsStrokes.map(stroke => 
+            stroke.map(pt => ({
+                x: Math.round((pt.x - 250) * 0.70 + 340),
+                y: pt.y
+            }))
+        );
+
+        return [...tensMapped, ...unitsMapped];
+    }
+
+    return baseDigitGuides[1];
+}
+
+function initTracingMode() {
+    const selectorScreen = document.getElementById('tracing-selector-screen');
+    const gamePlayzone = document.getElementById('tracing-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.remove('hidden');
+        gamePlayzone.classList.add('hidden');
+    }
+}
+
+function startTracingStage(startNum, endNum) {
+    currentTracingStartNum = startNum;
+    currentTracingEndNum = endNum;
+    currentTracingNum = startNum;
+
+    const selectorScreen = document.getElementById('tracing-selector-screen');
+    const gamePlayzone = document.getElementById('tracing-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.add('hidden');
+        gamePlayzone.classList.remove('hidden');
+    }
+
+    renderTracingNumberSelector();
+    initTracing();
+}
+
+function renderTracingNumberSelector() {
+    const container = document.getElementById('tracing-number-selector');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let n = currentTracingStartNum; n <= currentTracingEndNum; n++) {
+        const btn = document.createElement('button');
+        btn.className = `num-select-btn ${n === currentTracingNum ? 'active' : ''}`;
+        btn.dataset.num = n;
+        btn.textContent = n;
+        
+        btn.addEventListener('click', () => {
+            currentTracingNum = n;
+            document.querySelectorAll('#tracing-number-selector .num-select-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initTracing();
+        });
+
+        container.appendChild(btn);
+    }
+}
+
+// 쓰기 단계 선택 버튼 바인딩
+document.querySelectorAll('.tracing-diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const startNum = parseInt(btn.dataset.startNum);
+        const endNum = parseInt(btn.dataset.endNum);
+        startTracingStage(startNum, endNum);
+    });
+});
+
+// 단계 선택으로 뒤로가기 버튼 바인딩
+const tracingBackBtn = document.getElementById('tracing-to-selector-btn');
+if (tracingBackBtn) {
+    tracingBackBtn.addEventListener('click', () => {
+        initTracingMode();
+    });
+}
 
 function initTracing() {
     isDrawing = false;
@@ -1121,7 +1214,7 @@ function initTracing() {
     nextTargetPointIndex = 0;
 
     // 현재 설정된 currentTracingNum에 해당하는 버튼 활성화 보장
-    document.querySelectorAll('.num-select-btn').forEach(btn => {
+    document.querySelectorAll('#tracing-number-selector .num-select-btn').forEach(btn => {
         if (parseInt(btn.dataset.num) === currentTracingNum) {
             btn.classList.add('active');
         } else {
@@ -1140,7 +1233,6 @@ function initTracing() {
         rewardZone.appendChild(previewBlock);
     }
     
-    // 화면 크기 변화 및 CSS transition 레이아웃이 끝난 시점에 맞추어 안전하게 캔버스 렌더링
     requestAnimationFrame(() => {
         drawCanvasTemplate();
     });
@@ -1168,25 +1260,23 @@ function drawBezierStroke(points, strokeStyle, lineWidth, isDashed = false) {
             ctx.lineTo(points[i].x, points[i].y);
         }
     } else {
-        // Quadratic Curve 보간 적용
         for (let i = 1; i < points.length - 2; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
             const yc = (points[i].y + points[i + 1].y) / 2;
             ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
         }
-        // 마지막 포인트 마무리를 매끄럽게 처리
         const len = points.length;
         ctx.quadraticCurveTo(points[len - 2].x, points[len - 2].y, points[len - 1].x, points[len - 1].y);
     }
     ctx.stroke();
-    ctx.setLineDash([]); // 원복
+    ctx.setLineDash([]);
 }
 
 // 캔버스 가이드라인 렌더링
 function drawCanvasTemplate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const strokes = numberGuides[currentTracingNum];
+    const strokes = getGuideForNumber(currentTracingNum);
     
     // 1. 전체 숫자 실루엣 가이드 그리기 (회색 두꺼운 펜선 - 곡선 보간)
     strokes.forEach(stroke => {
@@ -1203,7 +1293,6 @@ function drawCanvasTemplate() {
         const activeStroke = strokes[currentStrokeIndex];
         drawBezierStroke(activeStroke, '#b5e2ff', 4, true);
 
-        // 현재 획에서 도달해야 하는 빨간 시작/체크 포인트 지시등 표시
         if (nextTargetPointIndex < activeStroke.length) {
             const nextPt = activeStroke[nextTargetPointIndex];
             ctx.fillStyle = '#ff3b30';
@@ -1211,7 +1300,6 @@ function drawCanvasTemplate() {
             ctx.arc(nextPt.x, nextPt.y, 16, 0, Math.PI * 2);
             ctx.fill();
 
-            // 이번 획의 최초 시작 좌표면 텍스트 힌트 띄우기
             if (nextTargetPointIndex === 0) {
                 ctx.fillStyle = '#ff3b30';
                 ctx.font = 'bold 16px Gowun Dodum';
@@ -1223,21 +1311,19 @@ function drawCanvasTemplate() {
 
 // 터치펜/손가락 그리기 핸들러 (Pointer Events 활용)
 canvas.addEventListener('pointerdown', (e) => {
-    if (isSuccessState) return; // 성공 상태 연출 중에는 입력 방지
+    if (isSuccessState) return;
     
     isDrawing = true;
     const rect = canvas.getBoundingClientRect();
     
-    // 캔버스 크기 비율 스케일 보정
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     
-    // 현재 쓰고 있는 획의 포인트들만 담아 시작
     drawPoints = [{ x, y }];
-    nextTargetPointIndex = 0; // 펜을 새로 대면 현재 획의 체크포인트 추적을 처음부터 시작
+    nextTargetPointIndex = 0;
     
     canvas.setPointerCapture(e.pointerId);
     checkTracingPoint(x, y);
@@ -1255,10 +1341,7 @@ canvas.addEventListener('pointermove', (e) => {
     drawPoints.push({ x, y });
     playSound('draw');
 
-    // 실시간 드로잉 렌더링
     drawUserPath();
-    
-    // 실시간 경로 검사
     checkTracingPoint(x, y);
 });
 
@@ -1267,22 +1350,19 @@ canvas.addEventListener('pointerup', (e) => {
     isDrawing = false;
     canvas.releasePointerCapture(e.pointerId);
 
-    // 선을 뗐을 때 획 완료 상태 검사
     evaluateTracing();
 });
 
-// 사용자가 현재 그리고 있는 실시간 궤적 렌더링 (곡선 보간 적용)
 function drawUserPath() {
-    drawCanvasTemplate(); // 템플릿 복구 (가이드 및 기완성 획)
+    drawCanvasTemplate();
     
     if (drawPoints.length > 0) {
         drawBezierStroke(drawPoints, '#4cd964', 14);
     }
 }
 
-// 터치펜 포인트가 다음 가이드 체크포인트에 닿았는지 판정 (실시간으로 체크포인트 인덱스만 전진)
 function checkTracingPoint(x, y) {
-    const strokes = numberGuides[currentTracingNum];
+    const strokes = getGuideForNumber(currentTracingNum);
     if (currentStrokeIndex >= strokes.length) return;
 
     const activeStroke = strokes[currentStrokeIndex];
@@ -1291,54 +1371,45 @@ function checkTracingPoint(x, y) {
     const targetPt = activeStroke[nextTargetPointIndex];
     const dist = Math.hypot(x - targetPt.x, y - targetPt.y);
 
-    // 45픽셀 범위 이내로 도달 시 체크포인트 도달 완료로 인정
     if (dist < 45) {
         nextTargetPointIndex++;
         drawUserPath();
     }
 }
 
-// 펜을 떼었을 때 현재 획의 완료 상태를 검증하고 안전하게 다음 획으로 갱신
 function evaluateTracing() {
-    const strokes = numberGuides[currentTracingNum];
+    const strokes = getGuideForNumber(currentTracingNum);
     if (currentStrokeIndex >= strokes.length) return;
 
     const activeStroke = strokes[currentStrokeIndex];
 
-    // 1. 현재 활성 획의 모든 가이드 체크포인트를 정상적으로 통과했는가?
     const passedAllCheckpoints = nextTargetPointIndex >= activeStroke.length;
     
-    // 2. [가장 중요] 사용자가 펜을 뗀 최종 종단 위치가 가이드 획의 마지막 목적 좌표와 충분히 가까운가?
     let reachedEnd = false;
     if (drawPoints.length > 0) {
         const lastDrawPoint = drawPoints[drawPoints.length - 1];
         const lastTargetPoint = activeStroke[activeStroke.length - 1];
         const distToEnd = Math.hypot(lastDrawPoint.x - lastTargetPoint.x, lastDrawPoint.y - lastTargetPoint.y);
         
-        // 최종 획 마무리에 대해 넉넉한 70px 이내의 터치 오차 허용
         if (distToEnd < 70) {
             reachedEnd = true;
         }
     }
 
-    // 두 개의 조건이 모두 부합해야만 진짜 정상 필기로 인정
     if (passedAllCheckpoints && reachedEnd) {
         completedStrokes.push([...drawPoints]);
-        playSound('pop'); // 획 완성음 (통!)
+        playSound('pop');
         currentStrokeIndex++;
         nextTargetPointIndex = 0;
         drawPoints = [];
 
-        // 마지막 획까지 전부 완료했는지 확인
         if (currentStrokeIndex >= strokes.length) {
             isDrawing = false;
             successTracing();
         } else {
-            // 다음 획 작성을 위해 화면 갱신 (펜을 완전히 뗀 시점에 안전하게 다음 획으로 전환)
             drawCanvasTemplate();
         }
     } else {
-        // 끝까지 다 긋지 않은 상태에서 터치가 유실되었거나 끊겼다면, 오작동 방지를 위해 현재 획 리셋
         drawPoints = [];
         nextTargetPointIndex = 0;
         drawCanvasTemplate();
@@ -1349,10 +1420,8 @@ function successTracing() {
     isSuccessState = true;
     playSound('success');
     
-    // 성공 피드백 배너 활성화
     tracingFeedback.classList.remove('hidden');
     
-    // 보상 넘버블록 캐릭터 렌더링
     rewardZone.innerHTML = '';
     const block = createBlockElement(currentTracingNum);
     block.style.position = 'relative';
@@ -1362,16 +1431,14 @@ function successTracing() {
     rewardZone.appendChild(block);
     block.classList.add('block-bounce');
 
-    // 2초 후에 성공 메시지 제거 및 자동으로 다음 숫자로 이동
     setTimeout(() => {
         tracingFeedback.classList.add('hidden');
         isSuccessState = false;
         
-        // 다음 숫자로 자동 전환 (10번 완료 시 다시 1번으로 순환)
-        if (currentTracingNum < 10) {
+        if (currentTracingNum < currentTracingEndNum) {
             currentTracingNum++;
         } else {
-            currentTracingNum = 1;
+            currentTracingNum = currentTracingStartNum;
         }
         initTracing();
     }, 2000);
