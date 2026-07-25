@@ -21,8 +21,11 @@ const bgmPlaylist = [
 let currentBgmIndex = 0;
 
 function getCurrentBgmGain() {
-    // NumberBlocks2.mp3 (index 1) 음량이 많이 작으므로 3.5배 음량 강력 증폭 보정
-    return (currentBgmIndex === 1) ? 3.5 : 1.0;
+    // NumberBlocks2.mp3 (index 1) 4.5배 강력 증폭
+    // NumberBlocks3.mp3 (index 2) 3.5배 음량 증폭 (NumberBlocks.mp3 수치와 동일 수준으로 감상)
+    if (currentBgmIndex === 1) return 4.5;
+    if (currentBgmIndex === 2) return 3.5;
+    return 1.0;
 }
 
 const bgm = new Audio(bgmPlaylist[currentBgmIndex]);
