@@ -347,8 +347,8 @@ function createBlockElement(value) {
     char.style.left = '50px';
     char.style.top = '50px';
 
-    if ((value >= 0 && value <= 20) || value === 100) {
-        // 0~20, 100: 원작 캐릭터 이미지 적용
+    if ((value >= 0 && value <= 50) || value === 100) {
+        // 0~50, 100: 원작 캐릭터 이미지 적용
         char.className = 'numberblock-character image-character';
         char.dataset.value = value;
 
@@ -660,7 +660,7 @@ document.querySelectorAll('#screen-sandbox .spawn-btn').forEach(btn => {
         const clientWidth = wrapper ? wrapper.clientWidth : sandboxPlayzone.clientWidth;
         
         // 블록의 가로 너비 판정 (이미지 캐릭터는 100px, CSS 2열 형태 블록은 100px, 1열 형태는 50px)
-        const isImgChar = (num >= 0 && num <= 20) || num === 100;
+        const isImgChar = (num >= 0 && num <= 50) || num === 100;
         const blockWidth = isImgChar ? 100 : ((num === 4 || num === 6 || num === 8 || num === 10) ? 100 : 50);
         
         // 현재 바라보고 있는 화면 중앙 좌표 구한 후 ±50px 미세 무작위 흔들림(겹침 방지) 부여
