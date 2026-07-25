@@ -1510,27 +1510,34 @@ main {
 }
 
 /* 각 난이도 버튼 개별 시그니처 색상 (넘버블록스 테마) */
-.diff-btn[data-start-stage="1"] {
+.diff-btn[data-start-stage="1"],
+.diff-btn[data-start-num="1"] {
     background: linear-gradient(135deg, #4cd964 0%, #2ecc71 100%);
     box-shadow: 0 6px 0 #27ae60;
 }
-.diff-btn[data-start-stage="11"] {
+.diff-btn[data-start-stage="11"],
+.diff-btn[data-start-num="11"] {
     background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     box-shadow: 0 6px 0 #1f6696;
 }
-.diff-btn[data-start-stage="21"] {
+.diff-btn[data-start-stage="21"],
+.diff-btn[data-start-num="21"] {
     background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
     box-shadow: 0 6px 0 #d35400;
-    color: #333;
+    color: #1e293b;
 }
-.diff-btn[data-start-stage="21"] .diff-info {
-    color: #444;
+.diff-btn[data-start-stage="21"] .diff-info,
+.diff-btn[data-start-num="21"] .diff-info {
+    color: #334155;
+    font-weight: 600;
 }
-.diff-btn[data-start-stage="31"] {
+.diff-btn[data-start-stage="31"],
+.diff-btn[data-start-num="31"] {
     background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
     box-shadow: 0 6px 0 #a04000;
 }
-.diff-btn[data-start-stage="41"] {
+.diff-btn[data-start-stage="41"],
+.diff-btn[data-start-num="41"] {
     background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
     box-shadow: 0 6px 0 #6c3483;
 }
