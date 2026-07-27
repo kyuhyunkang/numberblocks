@@ -1767,6 +1767,7 @@ function initKoreanTracing() {
     kCanvas = document.getElementById('korean-tracing-canvas');
     if (!kCanvas) return;
     kCtx = kCanvas.getContext('2d');
+    bindKoreanCanvasEvents();
 
     kIsDrawing = false;
     kIsSuccessState = false;
@@ -1896,7 +1897,9 @@ function bindKoreanCanvasEvents() {
         
         kDrawPoints = [{ x, y }];
         kNextTargetPointIndex = 0;
-        canvasEl.setPointerCapture(e.pointerId);
+        try {
+            canvasEl.setPointerCapture(e.pointerId);
+        } catch(err) {}
         checkKoreanTracingPoint(x, y);
     });
 
@@ -1914,12 +1917,17 @@ function bindKoreanCanvasEvents() {
         checkKoreanTracingPoint(x, y);
     });
 
-    canvasEl.addEventListener('pointerup', (e) => {
+    const handlePointerEnd = (e) => {
         if (!kIsDrawing) return;
         kIsDrawing = false;
-        canvasEl.releasePointerCapture(e.pointerId);
+        try {
+            canvasEl.releasePointerCapture(e.pointerId);
+        } catch(err) {}
         evaluateKoreanTracing();
-    });
+    };
+
+    canvasEl.addEventListener('pointerup', handlePointerEnd);
+    canvasEl.addEventListener('pointercancel', handlePointerEnd);
 }
 
 function drawKoreanUserPath() {
