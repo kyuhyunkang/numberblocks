@@ -32,6 +32,18 @@ const bgm = new Audio(bgmPlaylist[currentBgmIndex]);
 bgm.loop = false; // 곡이 끝나면 자동으로 다음 곡으로 전환하기 위해 false로 설정
 let bgmStarted = false;
 
+// 🎵 현재 재생 중인 BGM 트랙 번호 UI 업데이트
+function updateBgmTrackDisplay() {
+    const bgmTrackInfo = document.getElementById('bgm-track-info');
+    const bgmNextBtn = document.getElementById('btn-bgm-next');
+    if (bgmTrackInfo) {
+        bgmTrackInfo.textContent = `${currentBgmIndex + 1}/${bgmPlaylist.length}`;
+    }
+    if (bgmNextBtn) {
+        bgmNextBtn.title = `다음 곡 재생 (현재 BGM ${currentBgmIndex + 1}/${bgmPlaylist.length})`;
+    }
+}
+
 // 곡이 종료되면 다음 트랙으로 자동 전환 및 연속 재생
 function playNextBgmTrack() {
     currentBgmIndex = (currentBgmIndex + 1) % bgmPlaylist.length;
@@ -41,6 +53,7 @@ function playNextBgmTrack() {
     if (soundEnabled && bgmStarted) {
         bgm.play().catch(err => console.log("다음 BGM 곡 재생 오류:", err));
     }
+    updateBgmTrackDisplay();
 }
 
 bgm.addEventListener('ended', playNextBgmTrack);
@@ -62,29 +75,16 @@ function playGoodJob(audioSrc = './goodjob.mp3', gainMultiplier = 1.0) {
     }
     goodJobAudio = new Audio(audioSrc);
     
-    // Web Audio API를 사용해 음량이 작은 칭찬 음성 3.0배까지 강력 증폭
-    initAudio();
-    if (audioCtx) {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        try {
-            const source = audioCtx.createMediaElementSource(goodJobAudio);
-            const gainNode = audioCtx.createGain();
-            gainNode.gain.setValueAtTime(gainMultiplier, audioCtx.currentTime);
-            source.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-        } catch (e) {
-            console.log("Web Audio gain setup exception:", e);
-        }
-    }
+    // HTML5 Audio 볼륨 설정 (Web Audio CORS 제한으로 인한 무음 방지)
+    const effectiveVol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8) * gainMultiplier;
+    goodJobAudio.volume = Math.max(0, Math.min(1.0, effectiveVol));
     
     goodJobAudio.play().catch(err => console.log("GoodJob audio error:", err));
 }
 
-// 볼륨 모드 설정값 (메뉴: 크게 0.5, 게임 수행: 작게 0.15)
+// 볼륨 모드 설정값 (메뉴: 크게 0.5, 게임 수행: 작게 0.30)
 const BGM_VOLUME_HIGH = 0.5;
-const BGM_VOLUME_LOW = 0.15;
+const BGM_VOLUME_LOW = 0.30;
 let currentTargetBgmVolume = BGM_VOLUME_HIGH;
 let userBgmVolumeRatio = 0.5; // 슬라이더 기본값 (50%)
 let lastUserVolumeRatio = 0.5;
@@ -157,97 +157,127 @@ function initAudio() {
 function playSound(type) {
     if (!soundEnabled) return;
     initAudio();
+
+    const doPlay = () => {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        
+        switch (type) {
+            case 'pop': // 블록 소환음
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(150, now);
+                osc1.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.15);
+                break;
+                
+            case 'merge': // 합체음 (도-미-솔 화음 또는 부드러운 상승음)
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.05);
+                    osc.stop(now + idx * 0.05 + 0.3);
+                });
+                break;
+
+            case 'split': // 쪼개기음 (높은음에서 낮은음으로 쇽!)
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(800, now);
+                osc2.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+                gain2.gain.setValueAtTime(0.2, now);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now);
+                osc2.stop(now + 0.2);
+                break;
+
+            case 'wrong': // 오답 효과음 (친근한 삐빅/띠용 부저음)
+                const oscW1 = audioCtx.createOscillator();
+                const oscW2 = audioCtx.createOscillator();
+                const gainW = audioCtx.createGain();
+                oscW1.type = 'sawtooth';
+                oscW2.type = 'sine';
+                oscW1.frequency.setValueAtTime(220, now);
+                oscW1.frequency.setValueAtTime(160, now + 0.12);
+                oscW2.frequency.setValueAtTime(210, now);
+                oscW2.frequency.setValueAtTime(150, now + 0.12);
+                const filterW = audioCtx.createBiquadFilter();
+                filterW.type = 'lowpass';
+                filterW.frequency.value = 600;
+                gainW.gain.setValueAtTime(0.25, now);
+                gainW.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                oscW1.connect(filterW);
+                oscW2.connect(filterW);
+                filterW.connect(gainW);
+                gainW.connect(audioCtx.destination);
+                oscW1.start(now);
+                oscW2.start(now);
+                oscW1.stop(now + 0.3);
+                oscW2.stop(now + 0.3);
+                break;
+
+            case 'success': // 정답/성공 (트럼펫 느낌의 빰빰!)
+                const successNotes = [523.25, 523.25, 523.25, 659.25, 783.99]; // C5, C5, C5, E5, G5
+                const durations = [0.1, 0.1, 0.1, 0.15, 0.4];
+                let timeAccumulator = 0;
+                successNotes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth'; // 브라스 톤
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 1200;
+
+                    osc.frequency.setValueAtTime(freq, now + timeAccumulator);
+                    gain.gain.setValueAtTime(0.18, now + timeAccumulator);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + timeAccumulator + durations[idx]);
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now + timeAccumulator);
+                    osc.stop(now + timeAccumulator + durations[idx]);
+                    timeAccumulator += durations[idx] - 0.02;
+                });
+                break;
+
+            case 'draw': // 선 그리기 미세음 (지속적인 연필 사운드 느낌)
+                const oscDraw = audioCtx.createOscillator();
+                const gainDraw = audioCtx.createGain();
+                oscDraw.type = 'sine';
+                oscDraw.frequency.setValueAtTime(300, now);
+                gainDraw.gain.setValueAtTime(0.03, now);
+                gainDraw.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                oscDraw.connect(gainDraw);
+                gainDraw.connect(audioCtx.destination);
+                oscDraw.start(now);
+                oscDraw.stop(now + 0.05);
+                break;
+        }
+    };
+
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-
-    const now = audioCtx.currentTime;
-    
-    switch (type) {
-        case 'pop': // 블록 소환음
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(150, now);
-            osc1.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-            gain1.gain.setValueAtTime(0.3, now);
-            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-            osc1.connect(gain1);
-            gain1.connect(audioCtx.destination);
-            osc1.start(now);
-            osc1.stop(now + 0.15);
-            break;
-            
-        case 'merge': // 합체음 (도-미-솔 화음 또는 부드러운 상승음)
-            const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
-            notes.forEach((freq, idx) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-                gain.gain.setValueAtTime(0.15, now + idx * 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now + idx * 0.05);
-                osc.stop(now + idx * 0.05 + 0.3);
-            });
-            break;
-
-        case 'split': // 쪼개기음 (높은음에서 낮은음으로 쇽!)
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'triangle';
-            osc2.frequency.setValueAtTime(800, now);
-            osc2.frequency.exponentialRampToValueAtTime(200, now + 0.2);
-            gain2.gain.setValueAtTime(0.2, now);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start(now);
-            osc2.stop(now + 0.2);
-            break;
-
-        case 'success': // 정답/성공 (트럼펫 느낌의 빰빰!)
-            const successNotes = [523.25, 523.25, 523.25, 659.25, 783.99]; // C5, C5, C5, E5, G5
-            const durations = [0.1, 0.1, 0.1, 0.15, 0.4];
-            let timeAccumulator = 0;
-            successNotes.forEach((freq, idx) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sawtooth'; // 브라스 톤
-                
-                // 간단한 로우패스 필터로 부드럽게 만듦
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 1200;
-
-                osc.frequency.setValueAtTime(freq, now + timeAccumulator);
-                gain.gain.setValueAtTime(0.12, now + timeAccumulator);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + timeAccumulator + durations[idx]);
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(now + timeAccumulator);
-                osc.stop(now + timeAccumulator + durations[idx]);
-                timeAccumulator += durations[idx] - 0.02;
-            });
-            break;
-
-        case 'draw': // 선 그리기 미세음 (지속적인 연필 사운드 느낌)
-            const oscDraw = audioCtx.createOscillator();
-            const gainDraw = audioCtx.createGain();
-            oscDraw.type = 'sine';
-            oscDraw.frequency.setValueAtTime(300, now);
-            gainDraw.gain.setValueAtTime(0.03, now);
-            gainDraw.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-            oscDraw.connect(gainDraw);
-            gainDraw.connect(audioCtx.destination);
-            oscDraw.start(now);
-            oscDraw.stop(now + 0.05);
-            break;
+        audioCtx.resume().then(doPlay).catch(() => doPlay());
+    } else {
+        doPlay();
     }
 }
 
@@ -290,6 +320,12 @@ function switchMode(mode) {
     } else if (mode === 'tracing') {
         initTracingMode();
         setBgmVolume(BGM_VOLUME_LOW); // 숫자 쓰기 (게임 과정): 작게
+    } else if (mode === 'korean-tracing') {
+        initKoreanTracingMode();
+        setBgmVolume(BGM_VOLUME_LOW); // 한글 쓰기 (게임 과정): 작게
+    } else if (mode === 'korean-quiz') {
+        initKoreanQuizMode();
+        setBgmVolume(BGM_VOLUME_LOW); // 한글 찾기 (게임 과정): 작게
     }
 }
 
@@ -297,6 +333,17 @@ function switchMode(mode) {
 document.getElementById('menu-sandbox').addEventListener('click', () => switchMode('sandbox'));
 document.getElementById('menu-adventure').addEventListener('click', () => switchMode('adventure'));
 document.getElementById('menu-tracing').addEventListener('click', () => switchMode('tracing'));
+
+const menuKoreanTracing = document.getElementById('menu-korean-tracing');
+if (menuKoreanTracing) {
+    menuKoreanTracing.addEventListener('click', () => switchMode('korean-tracing'));
+}
+
+const menuKoreanQuiz = document.getElementById('menu-korean-quiz');
+if (menuKoreanQuiz) {
+    menuKoreanQuiz.addEventListener('click', () => switchMode('korean-quiz'));
+}
+
 document.getElementById('btn-home').addEventListener('click', () => switchMode('home'));
 document.getElementById('btn-logo').addEventListener('click', () => switchMode('home'));
 
@@ -338,6 +385,26 @@ soundBtn.addEventListener('click', () => {
     }
     initAudio();
 });
+
+const bgmNextBtn = document.getElementById('btn-bgm-next');
+if (bgmNextBtn) {
+    bgmNextBtn.addEventListener('click', () => {
+        initAudio();
+        bgmStarted = true;
+        if (!soundEnabled) {
+            soundEnabled = true;
+            if (soundBtn) soundBtn.textContent = '🔊';
+            if (volumeSlider) {
+                userBgmVolumeRatio = lastUserVolumeRatio > 0 ? lastUserVolumeRatio : 0.5;
+                volumeSlider.value = Math.round(userBgmVolumeRatio * 100);
+            }
+        }
+        playNextBgmTrack();
+    });
+}
+
+// 초기 BGM 트랙 정보 UI 반영
+updateBgmTrackDisplay();
 
 // ==========================================
 // 3. 넘버블록스 공통 렌더링 헬퍼
@@ -828,6 +895,8 @@ function generateChoices(answer) {
 function handleCorrectAnswer(answerVal) {
     correctCountInSet++; // 세트 내 정답 개수 누적
     
+    playSound('success'); // 🎉 정답 팡파르 효과음 출력!
+    
     const feedbackLayer = document.getElementById('adventure-success-feedback');
     const blockDisplay = document.getElementById('feedback-block-display');
     const bubbleText = document.getElementById('feedback-bubble-text');
@@ -856,7 +925,7 @@ function handleCorrectAnswer(answerVal) {
 
 // 오답 연출 (즉시 해설 제공 및 다음 문제로 진행)
 function handleWrongAnswer(buttonEl) {
-    playSound('split'); // 오답 효과음
+    playSound('wrong'); // ❌ 오답 전용 친근한 효과음
     isSetFailed = true; // 세트 내 오답 발생 체크
     
     // 선택한 오답 버튼 붉은색 셰이크 효과
@@ -1045,20 +1114,20 @@ const baseDigitGuides = {
     ],
     3: [
         [
-            { x: 180, y: 150 }, { x: 195, y: 135 }, { x: 220, y: 125 }, { x: 250, y: 120 }, { x: 280, y: 125 }, 
-            { x: 305, y: 135 }, { x: 320, y: 155 }, { x: 320, y: 175 }, { x: 305, y: 195 }, { x: 280, y: 205 }, 
-            { x: 250, y: 210 }, { x: 280, y: 215 }, { x: 305, y: 225 }, { x: 320, y: 245 }, { x: 325, y: 270 }, 
-            { x: 320, y: 295 }, { x: 305, y: 320 }, { x: 280, y: 335 }, { x: 250, y: 340 }, { x: 220, y: 335 }, 
-            { x: 195, y: 320 }, { x: 180, y: 305 }
+            { x: 175, y: 155 }, { x: 195, y: 132 }, { x: 225, y: 118 }, { x: 250, y: 112 }, { x: 280, y: 118 }, 
+            { x: 310, y: 132 }, { x: 330, y: 155 }, { x: 330, y: 185 }, { x: 310, y: 215 }, { x: 280, y: 238 }, 
+            { x: 250, y: 245 }, 
+            { x: 285, y: 255 }, { x: 315, y: 275 }, { x: 335, y: 305 }, { x: 340, y: 340 }, { x: 325, y: 370 }, 
+            { x: 295, y: 388 }, { x: 250, y: 392 }, { x: 210, y: 385 }, { x: 180, y: 365 }, { x: 170, y: 340 }
         ]
     ],
     4: [
         [
-            { x: 280, y: 100 }, { x: 255, y: 145 }, { x: 230, y: 190 }, { x: 205, y: 235 }, { x: 180, y: 280 }, 
-            { x: 220, y: 280 }, { x: 260, y: 280 }, { x: 300, y: 280 }, { x: 340, y: 280 }
+            { x: 300, y: 110 }, { x: 260, y: 155 }, { x: 220, y: 200 }, { x: 180, y: 245 }, { x: 145, y: 295 }, 
+            { x: 195, y: 295 }, { x: 250, y: 295 }, { x: 300, y: 295 }, { x: 345, y: 295 }, { x: 380, y: 295 }
         ],
         [
-            { x: 280, y: 200 }, { x: 280, y: 250 }, { x: 280, y: 300 }, { x: 280, y: 350 }, { x: 280, y: 400 }
+            { x: 300, y: 190 }, { x: 300, y: 245 }, { x: 300, y: 295 }, { x: 300, y: 345 }, { x: 300, y: 395 }
         ]
     ],
     5: [
@@ -1459,6 +1528,798 @@ document.querySelectorAll('.num-select-btn').forEach(btn => {
 });
 
 // 숫자 쓰기 초기화는 상단 숫자 선택 시 또는 획 실패 시 자동으로 트리거됩니다.
+
+// ==========================================
+// 7-B. 🔤 한글 쓰기 연습 (Korean Tracing System - 1단계: 모음 10자, 2단계: 자음/가목 14자)
+// ==========================================
+const KOREAN_STAGE_1 = ['아', '야', '어', '여', '오', '요', '우', '유', '으', '이'];
+const KOREAN_STAGE_2 = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+
+let currentKoreanStageList = KOREAN_STAGE_1;
+let currentKoreanLetter = '아';
+
+// 한글 음성 파일 재생 함수 (./한글/{letter}.mp3)
+function playKoreanAudio(letter) {
+    if (!soundEnabled) return;
+    const audio = new Audio(`./한글/${letter}.mp3`);
+    const vol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8);
+    audio.volume = Math.max(0, Math.min(1.0, vol));
+    audio.play().catch(err => console.log("한글 음성 재생 오류:", err));
+}
+
+// 획 좌표 가이드 데이터베이스 (500x500 캔버스 기준 - 정중앙 수직 배치 및 꺽임 각도 직선 보정)
+const baseKoreanGuides = {
+    // 1단계 기초 모음 10자 (정중앙 밸런스 정렬)
+    '아': [
+        [{ x: 180, y: 195 }, { x: 141, y: 211 }, { x: 125, y: 250 }, { x: 141, y: 289 }, { x: 180, y: 305 }, { x: 219, y: 289 }, { x: 235, y: 250 }, { x: 219, y: 211 }, { x: 180, y: 195 }],
+        [{ x: 320, y: 100 }, { x: 320, y: 400 }],
+        [{ x: 320, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '야': [
+        [{ x: 180, y: 195 }, { x: 141, y: 211 }, { x: 125, y: 250 }, { x: 141, y: 289 }, { x: 180, y: 305 }, { x: 219, y: 289 }, { x: 235, y: 250 }, { x: 219, y: 211 }, { x: 180, y: 195 }],
+        [{ x: 320, y: 100 }, { x: 320, y: 400 }],
+        [{ x: 320, y: 180 }, { x: 395, y: 180 }],
+        [{ x: 320, y: 320 }, { x: 395, y: 320 }]
+    ],
+    '어': [
+        [{ x: 170, y: 195 }, { x: 131, y: 211 }, { x: 115, y: 250 }, { x: 131, y: 289 }, { x: 170, y: 305 }, { x: 209, y: 289 }, { x: 225, y: 250 }, { x: 209, y: 211 }, { x: 170, y: 195 }],
+        [{ x: 225, y: 250 }, { x: 330, y: 250 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }]
+    ],
+    '여': [
+        [{ x: 175, y: 195 }, { x: 136, y: 211 }, { x: 120, y: 250 }, { x: 136, y: 289 }, { x: 175, y: 305 }, { x: 214, y: 289 }, { x: 230, y: 250 }, { x: 214, y: 211 }, { x: 175, y: 195 }],
+        [{ x: 250, y: 180 }, { x: 325, y: 180 }],
+        [{ x: 250, y: 320 }, { x: 325, y: 320 }],
+        [{ x: 325, y: 100 }, { x: 325, y: 400 }]
+    ],
+    '오': [
+        [{ x: 250, y: 70 }, { x: 211, y: 86 }, { x: 195, y: 120 }, { x: 211, y: 154 }, { x: 250, y: 170 }, { x: 289, y: 154 }, { x: 305, y: 120 }, { x: 289, y: 86 }, { x: 250, y: 70 }],
+        [{ x: 250, y: 240 }, { x: 250, y: 310 }],
+        [{ x: 120, y: 310 }, { x: 380, y: 310 }]
+    ],
+    '요': [
+        [{ x: 250, y: 70 }, { x: 211, y: 86 }, { x: 195, y: 120 }, { x: 211, y: 154 }, { x: 250, y: 170 }, { x: 289, y: 154 }, { x: 305, y: 120 }, { x: 289, y: 86 }, { x: 250, y: 70 }],
+        [{ x: 200, y: 240 }, { x: 200, y: 310 }],
+        [{ x: 300, y: 240 }, { x: 300, y: 310 }],
+        [{ x: 120, y: 310 }, { x: 380, y: 310 }]
+    ],
+    '우': [
+        [{ x: 250, y: 85 }, { x: 211, y: 101 }, { x: 195, y: 140 }, { x: 211, y: 179 }, { x: 250, y: 195 }, { x: 289, y: 179 }, { x: 305, y: 140 }, { x: 289, y: 101 }, { x: 250, y: 85 }],
+        [{ x: 120, y: 265 }, { x: 380, y: 265 }],
+        [{ x: 250, y: 265 }, { x: 250, y: 400 }]
+    ],
+    '유': [
+        [{ x: 250, y: 85 }, { x: 211, y: 101 }, { x: 195, y: 140 }, { x: 211, y: 179 }, { x: 250, y: 195 }, { x: 289, y: 179 }, { x: 305, y: 140 }, { x: 289, y: 101 }, { x: 250, y: 85 }],
+        [{ x: 120, y: 265 }, { x: 380, y: 265 }],
+        [{ x: 200, y: 265 }, { x: 200, y: 400 }],
+        [{ x: 300, y: 265 }, { x: 300, y: 400 }]
+    ],
+    '으': [
+        [{ x: 250, y: 110 }, { x: 211, y: 126 }, { x: 195, y: 165 }, { x: 211, y: 204 }, { x: 250, y: 220 }, { x: 289, y: 204 }, { x: 305, y: 165 }, { x: 289, y: 126 }, { x: 250, y: 110 }],
+        [{ x: 120, y: 335 }, { x: 380, y: 335 }]
+    ],
+    '이': [
+        [{ x: 180, y: 195 }, { x: 141, y: 211 }, { x: 125, y: 250 }, { x: 141, y: 289 }, { x: 180, y: 305 }, { x: 219, y: 289 }, { x: 235, y: 250 }, { x: 219, y: 211 }, { x: 180, y: 195 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }]
+    ],
+    // 2단계 기초 가목 14자 (꺾임 각도 직선 보정 & 수직 중앙 정렬)
+    '가': [
+        { points: [{ x: 110, y: 160 }, { x: 240, y: 160 }, { x: 215, y: 310 }], isLinear: true },
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '나': [
+        { points: [{ x: 130, y: 160 }, { x: 130, y: 310 }, { x: 250, y: 310 }], isLinear: true },
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '다': [
+        [{ x: 120, y: 160 }, { x: 240, y: 160 }],
+        { points: [{ x: 120, y: 160 }, { x: 120, y: 310 }, { x: 240, y: 310 }], isLinear: true },
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '라': [
+        { points: [{ x: 120, y: 160 }, { x: 240, y: 160 }, { x: 240, y: 235 }], isLinear: true },
+        [{ x: 120, y: 235 }, { x: 240, y: 235 }],
+        { points: [{ x: 120, y: 235 }, { x: 120, y: 310 }, { x: 240, y: 310 }], isLinear: true },
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '마': [
+        [{ x: 120, y: 160 }, { x: 120, y: 310 }],
+        { points: [{ x: 120, y: 160 }, { x: 240, y: 160 }, { x: 240, y: 310 }], isLinear: true },
+        [{ x: 120, y: 310 }, { x: 240, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '바': [
+        [{ x: 130, y: 160 }, { x: 130, y: 310 }],
+        [{ x: 230, y: 160 }, { x: 230, y: 310 }],
+        [{ x: 130, y: 235 }, { x: 230, y: 235 }],
+        [{ x: 130, y: 310 }, { x: 230, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '사': [
+        [{ x: 180, y: 160 }, { x: 120, y: 310 }],
+        [{ x: 160, y: 235 }, { x: 240, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '자': [
+        [{ x: 120, y: 160 }, { x: 240, y: 160 }],
+        [{ x: 180, y: 160 }, { x: 125, y: 310 }],
+        [{ x: 180, y: 160 }, { x: 245, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '차': [
+        [{ x: 180, y: 115 }, { x: 180, y: 148 }],
+        [{ x: 120, y: 160 }, { x: 240, y: 160 }],
+        [{ x: 180, y: 160 }, { x: 125, y: 310 }],
+        [{ x: 180, y: 160 }, { x: 245, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '카': [
+        { points: [{ x: 110, y: 160 }, { x: 240, y: 160 }, { x: 215, y: 310 }], isLinear: true },
+        [{ x: 110, y: 235 }, { x: 230, y: 235 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '타': [
+        [{ x: 120, y: 160 }, { x: 240, y: 160 }],
+        [{ x: 120, y: 235 }, { x: 230, y: 235 }],
+        { points: [{ x: 120, y: 160 }, { x: 120, y: 310 }, { x: 240, y: 310 }], isLinear: true },
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '파': [
+        [{ x: 110, y: 160 }, { x: 250, y: 160 }],
+        [{ x: 155, y: 160 }, { x: 155, y: 310 }],
+        [{ x: 205, y: 160 }, { x: 205, y: 310 }],
+        [{ x: 110, y: 310 }, { x: 250, y: 310 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ],
+    '하': [
+        [{ x: 180, y: 110 }, { x: 180, y: 145 }],
+        [{ x: 120, y: 155 }, { x: 240, y: 155 }],
+        [{ x: 180, y: 195 }, { x: 145, y: 210 }, { x: 130, y: 245 }, { x: 145, y: 280 }, { x: 180, y: 295 }, { x: 215, y: 280 }, { x: 230, y: 245 }, { x: 215, y: 210 }, { x: 180, y: 195 }],
+        [{ x: 330, y: 100 }, { x: 330, y: 400 }],
+        [{ x: 330, y: 250 }, { x: 395, y: 250 }]
+    ]
+};
+
+let kIsDrawing = false;
+let kIsSuccessState = false;
+let kDrawPoints = [];
+let kCompletedStrokes = [];
+let kCurrentStrokeIndex = 0;
+let kNextTargetPointIndex = 0;
+
+let kCanvas = null;
+let kCtx = null;
+
+function getKoreanStrokePoints(strokeObj) {
+    if (Array.isArray(strokeObj)) return strokeObj;
+    if (strokeObj && strokeObj.points) return strokeObj.points;
+    return [];
+}
+
+function getKoreanStrokeIsLinear(strokeObj) {
+    if (strokeObj && strokeObj.isLinear) return true;
+    return false;
+}
+
+function initKoreanTracingMode() {
+    const selectorScreen = document.getElementById('korean-tracing-selector-screen');
+    const gamePlayzone = document.getElementById('korean-tracing-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.remove('hidden');
+        gamePlayzone.classList.add('hidden');
+    }
+}
+
+function startKoreanTracingStage(stageNum) {
+    currentKoreanStageList = stageNum === 1 ? KOREAN_STAGE_1 : KOREAN_STAGE_2;
+    currentKoreanLetter = currentKoreanStageList[0];
+
+    const selectorScreen = document.getElementById('korean-tracing-selector-screen');
+    const gamePlayzone = document.getElementById('korean-tracing-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.add('hidden');
+        gamePlayzone.classList.remove('hidden');
+    }
+
+    renderKoreanLetterSelector();
+    initKoreanTracing();
+    bindKoreanCanvasEvents();
+}
+
+function renderKoreanLetterSelector() {
+    const container = document.getElementById('korean-letter-selector');
+    if (!container) return;
+    container.innerHTML = '';
+
+    currentKoreanStageList.forEach(letter => {
+        const btn = document.createElement('button');
+        btn.className = `num-select-btn ${letter === currentKoreanLetter ? 'active' : ''}`;
+        btn.dataset.letter = letter;
+        btn.textContent = letter;
+        
+        btn.addEventListener('click', () => {
+            currentKoreanLetter = letter;
+            document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playKoreanAudio(letter);
+            initKoreanTracing();
+        });
+
+        container.appendChild(btn);
+    });
+}
+
+function initKoreanTracing() {
+    kCanvas = document.getElementById('korean-tracing-canvas');
+    if (!kCanvas) return;
+    kCtx = kCanvas.getContext('2d');
+
+    kIsDrawing = false;
+    kIsSuccessState = false;
+    kDrawPoints = [];
+    kCompletedStrokes = [];
+    kCurrentStrokeIndex = 0;
+    kNextTargetPointIndex = 0;
+
+    const feedback = document.getElementById('korean-tracing-feedback');
+    const rewardZone = document.getElementById('korean-tracing-reward-zone');
+
+    if (feedback) feedback.classList.add('hidden');
+    
+    // 처음 진입 시 50가지 중 무작위 넘버블록스 보상 캐릭터 미리보기
+    if (rewardZone) {
+        rewardZone.innerHTML = '';
+        const randomCharVal = Math.floor(Math.random() * 50) + 1;
+        const previewBlock = createBlockElement(randomCharVal);
+        previewBlock.style.position = 'relative';
+        previewBlock.style.left = '0';
+        previewBlock.style.top = '0';
+        rewardZone.appendChild(previewBlock);
+    }
+    
+    document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(btn => {
+        if (btn.dataset.letter === currentKoreanLetter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    requestAnimationFrame(() => {
+        drawKoreanCanvasTemplate();
+    });
+}
+
+function drawKoreanBezierStroke(strokeObj, strokeStyle, lineWidth, isDashed = false) {
+    if (!strokeObj || !kCtx) return;
+    
+    const points = getKoreanStrokePoints(strokeObj);
+    const isLinear = getKoreanStrokeIsLinear(strokeObj);
+    if (points.length === 0) return;
+
+    kCtx.strokeStyle = strokeStyle;
+    kCtx.lineWidth = lineWidth;
+    kCtx.lineCap = 'round';
+    kCtx.lineJoin = 'round';
+    if (isDashed) {
+        kCtx.setLineDash([10, 10]);
+    } else {
+        kCtx.setLineDash([]);
+    }
+
+    kCtx.beginPath();
+    kCtx.moveTo(points[0].x, points[0].y);
+
+    if (isLinear || points.length < 3) {
+        for (let i = 1; i < points.length; i++) {
+            kCtx.lineTo(points[i].x, points[i].y);
+        }
+    } else {
+        for (let i = 1; i < points.length - 2; i++) {
+            const xc = (points[i].x + points[i + 1].x) / 2;
+            const yc = (points[i].y + points[i + 1].y) / 2;
+            kCtx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+        }
+        const len = points.length;
+        kCtx.quadraticCurveTo(points[len - 2].x, points[len - 2].y, points[len - 1].x, points[len - 1].y);
+    }
+    kCtx.stroke();
+    kCtx.setLineDash([]);
+}
+
+function drawKoreanCanvasTemplate() {
+    if (!kCtx || !kCanvas) return;
+    kCtx.clearRect(0, 0, kCanvas.width, kCanvas.height);
+    
+    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    
+    // 1. 회색 기초 라인
+    strokes.forEach(stroke => {
+        drawKoreanBezierStroke(stroke, '#e2e8f0', 45);
+    });
+
+    // 2. 그려진 획들 (연두색)
+    kCompletedStrokes.forEach(strokeObj => {
+        drawKoreanBezierStroke(strokeObj, '#4cd964', 14);
+    });
+
+    // 3. 현재 활성 획 및 빨간 추적 점
+    if (kCurrentStrokeIndex < strokes.length) {
+        const activeStroke = strokes[kCurrentStrokeIndex];
+        const activePoints = getKoreanStrokePoints(activeStroke);
+        drawKoreanBezierStroke(activeStroke, '#af52de', 4, true);
+
+        if (kNextTargetPointIndex < activePoints.length) {
+            const nextPt = activePoints[kNextTargetPointIndex];
+            kCtx.fillStyle = '#ff3b30';
+            kCtx.beginPath();
+            kCtx.arc(nextPt.x, nextPt.y, 16, 0, Math.PI * 2);
+            kCtx.fill();
+
+            if (kNextTargetPointIndex === 0) {
+                kCtx.fillStyle = '#ff3b30';
+                kCtx.font = 'bold 16px Gowun Dodum';
+                kCtx.fillText('여기서 시작!', nextPt.x - 40, nextPt.y - 25);
+            }
+        }
+    }
+}
+
+// 한글 캔버스 터치/마우스 이벤트 리스너 바인딩
+function bindKoreanCanvasEvents() {
+    const canvasEl = document.getElementById('korean-tracing-canvas');
+    if (!canvasEl || canvasEl.dataset.bound === 'true') return;
+    canvasEl.dataset.bound = 'true';
+
+    canvasEl.addEventListener('pointerdown', (e) => {
+        if (kIsSuccessState) return;
+        kIsDrawing = true;
+        const rect = canvasEl.getBoundingClientRect();
+        const scaleX = canvasEl.width / rect.width;
+        const scaleY = canvasEl.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        
+        kDrawPoints = [{ x, y }];
+        kNextTargetPointIndex = 0;
+        canvasEl.setPointerCapture(e.pointerId);
+        checkKoreanTracingPoint(x, y);
+    });
+
+    canvasEl.addEventListener('pointermove', (e) => {
+        if (!kIsDrawing || kIsSuccessState) return;
+        const rect = canvasEl.getBoundingClientRect();
+        const scaleX = canvasEl.width / rect.width;
+        const scaleY = canvasEl.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        
+        kDrawPoints.push({ x, y });
+        playSound('draw');
+        drawKoreanUserPath();
+        checkKoreanTracingPoint(x, y);
+    });
+
+    canvasEl.addEventListener('pointerup', (e) => {
+        if (!kIsDrawing) return;
+        kIsDrawing = false;
+        canvasEl.releasePointerCapture(e.pointerId);
+        evaluateKoreanTracing();
+    });
+}
+
+function drawKoreanUserPath() {
+    drawKoreanCanvasTemplate();
+    if (kDrawPoints.length > 0) {
+        drawKoreanBezierStroke(kDrawPoints, '#4cd964', 14);
+    }
+}
+
+function checkKoreanTracingPoint(x, y) {
+    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    if (kCurrentStrokeIndex >= strokes.length) return;
+
+    const activePoints = getKoreanStrokePoints(strokes[kCurrentStrokeIndex]);
+    if (kNextTargetPointIndex >= activePoints.length) return;
+
+    const targetPt = activePoints[kNextTargetPointIndex];
+    const dist = Math.hypot(x - targetPt.x, y - targetPt.y);
+
+    if (dist < 45) {
+        kNextTargetPointIndex++;
+        drawKoreanUserPath();
+    }
+}
+
+function evaluateKoreanTracing() {
+    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    if (kCurrentStrokeIndex >= strokes.length) return;
+
+    const activeStroke = strokes[kCurrentStrokeIndex];
+    const activePoints = getKoreanStrokePoints(activeStroke);
+    const passedAllCheckpoints = kNextTargetPointIndex >= activePoints.length;
+    
+    let reachedEnd = false;
+    if (kDrawPoints.length > 0) {
+        const lastDrawPoint = kDrawPoints[kDrawPoints.length - 1];
+        const lastTargetPoint = activePoints[activePoints.length - 1];
+        const distToEnd = Math.hypot(lastDrawPoint.x - lastTargetPoint.x, lastDrawPoint.y - lastTargetPoint.y);
+        
+        if (distToEnd < 70) {
+            reachedEnd = true;
+        }
+    }
+
+    if (passedAllCheckpoints && reachedEnd) {
+        kCompletedStrokes.push([...kDrawPoints]);
+        playSound('pop');
+        kCurrentStrokeIndex++;
+        kNextTargetPointIndex = 0;
+        kDrawPoints = [];
+
+        if (kCurrentStrokeIndex >= strokes.length) {
+            kIsDrawing = false;
+            successKoreanTracing();
+        } else {
+            drawKoreanCanvasTemplate();
+        }
+    } else {
+        kDrawPoints = [];
+        kNextTargetPointIndex = 0;
+        drawKoreanCanvasTemplate();
+    }
+}
+
+function successKoreanTracing() {
+    kIsSuccessState = true;
+    playSound('success');
+    triggerConfetti(); // 🎉 폭죽 축하 애니메이션 발사!
+    
+    // 칭찬 음성 & 말풍선 텍스트 턴제 순환 연동 (더하기 빼기 모험과 동일한 칭찬 말풍선 오버레이 출력!)
+    const feedbackLayer = document.getElementById('adventure-success-feedback');
+    const blockDisplay = document.getElementById('feedback-block-display');
+    const bubbleText = document.getElementById('feedback-bubble-text');
+
+    const praise = praiseRotationList[currentPraiseIndex];
+    playGoodJob(praise.audioSrc, praise.gain || 1.0);
+    currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+    if (feedbackLayer && bubbleText && blockDisplay) {
+        bubbleText.textContent = praise.text;
+        blockDisplay.innerHTML = '';
+        const randomCharVal = Math.floor(Math.random() * 20) + 1; // 1~20 중 무작위 넘버블록스
+        const rewardBlock = createBlockElement(randomCharVal);
+        blockDisplay.appendChild(rewardBlock);
+        feedbackLayer.classList.remove('hidden');
+    }
+
+    const feedback = document.getElementById('korean-tracing-feedback');
+    const rewardZone = document.getElementById('korean-tracing-reward-zone');
+    
+    if (feedback) {
+        feedback.textContent = `참 잘했어요! '${currentKoreanLetter}' 🎉`;
+        feedback.style.animation = 'none';
+        void feedback.offsetWidth; // Reflow 강제하여 애니메이션 재트리거
+        feedback.style.animation = '';
+        feedback.classList.remove('hidden');
+    }
+    
+    // 1~20가지 넘버블록스 원작 캐릭터 중 1개 무작위 선택하여 보상 제공!
+    if (rewardZone) {
+        rewardZone.innerHTML = '';
+        const randomCharVal = Math.floor(Math.random() * 20) + 1;
+        const block = createBlockElement(randomCharVal);
+        block.style.position = 'relative';
+        block.style.left = '0';
+        block.style.top = '0';
+        
+        rewardZone.appendChild(block);
+        block.classList.add('block-bounce');
+    }
+
+    setTimeout(() => {
+        if (feedback) feedback.classList.add('hidden');
+        if (feedbackLayer) feedbackLayer.classList.add('hidden');
+        kIsSuccessState = false;
+        
+        const currIdx = currentKoreanStageList.indexOf(currentKoreanLetter);
+        if (currIdx >= 0 && currIdx < currentKoreanStageList.length - 1) {
+            currentKoreanLetter = currentKoreanStageList[currIdx + 1];
+        } else {
+            currentKoreanLetter = currentKoreanStageList[0];
+        }
+        initKoreanTracing();
+    }, 2200);
+}
+
+// 한글 쓰기 단계 선택 버튼 바인딩
+document.querySelectorAll('.korean-tracing-diff-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const stage = parseInt(e.currentTarget.dataset.stage);
+        startKoreanTracingStage(stage);
+    });
+});
+
+// 한글 쓰기 단계 선택으로 뒤로가기 버튼 바인딩
+const koreanTracingBackBtn = document.getElementById('korean-tracing-to-selector-btn');
+if (koreanTracingBackBtn) {
+    koreanTracingBackBtn.addEventListener('click', () => {
+        initKoreanTracingMode();
+    });
+}
+
+// ====================================================
+// 🎧 7-C. 한글 찾기 연습 (듣기 퀴즈 모드 전용 로직)
+// ====================================================
+let currentKoreanQuizStage = 1;
+let currentKoreanQuizTarget = '';
+let currentKoreanQuizChoices = [];
+let isKoreanQuizEvaluating = false;
+let koreanQuizQuestionIndex = 1; // 세트 내 현재 문제 번호 (1~10)
+let koreanQuizCorrectCount = 0;   // 10문제 중 정답 개수
+
+const KOREAN_QUIZ_STAGE1_LETTERS = ['아', '야', '어', '여', '오', '요', '우', '유', '으', '이'];
+const KOREAN_QUIZ_STAGE2_LETTERS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+// 2단계 보기 생성용 (1단계 모음 10자 + 2단계 자음/가목 14자 융합 풀)
+const KOREAN_QUIZ_ALL_CHOICES_POOL = [...KOREAN_QUIZ_STAGE1_LETTERS, ...KOREAN_QUIZ_STAGE2_LETTERS];
+
+function initKoreanQuizMode() {
+    const selectorScreen = document.getElementById('korean-quiz-selector-screen');
+    const gamePlayzone = document.getElementById('korean-quiz-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.remove('hidden');
+        gamePlayzone.classList.add('hidden');
+    }
+}
+
+function startKoreanQuizStage(stageNum) {
+    currentKoreanQuizStage = stageNum;
+    koreanQuizQuestionIndex = 1;
+    koreanQuizCorrectCount = 0;
+
+    const selectorScreen = document.getElementById('korean-quiz-selector-screen');
+    const gamePlayzone = document.getElementById('korean-quiz-game-playzone');
+    
+    if (selectorScreen && gamePlayzone) {
+        selectorScreen.classList.add('hidden');
+        gamePlayzone.classList.remove('hidden');
+    }
+
+    generateKoreanQuizQuestion();
+}
+
+function generateKoreanQuizQuestion() {
+    isKoreanQuizEvaluating = false;
+    
+    // 문제 번호 진행 카운터 업데이트 (문제 1/10 ~ 10/10)
+    const stageCounter = document.getElementById('korean-quiz-stage');
+    if (stageCounter) {
+        stageCounter.textContent = koreanQuizQuestionIndex;
+    }
+
+    // 1. 정답 글자 무작위 선출
+    const targetPool = (currentKoreanQuizStage === 1) ? KOREAN_QUIZ_STAGE1_LETTERS : KOREAN_QUIZ_STAGE2_LETTERS;
+    currentKoreanQuizTarget = targetPool[Math.floor(Math.random() * targetPool.length)];
+
+    // 2. 4지선다 보기 배열 생성
+    let availableWrongPool;
+    if (currentKoreanQuizStage === 1) {
+        // 1단계: 1단계 모음(10자) 중 정답 제외 오답 선출
+        availableWrongPool = KOREAN_QUIZ_STAGE1_LETTERS.filter(l => l !== currentKoreanQuizTarget);
+    } else {
+        // 2단계: 1단계 모음 + 2단계 가목 융합 풀에서 정답 제외 오답 선출
+        availableWrongPool = KOREAN_QUIZ_ALL_CHOICES_POOL.filter((l, idx, self) => l !== currentKoreanQuizTarget && self.indexOf(l) === idx);
+    }
+
+    // 오답 3개 무작위 추출
+    const wrongChoices = [];
+    const poolCopy = [...availableWrongPool];
+    while (wrongChoices.length < 3 && poolCopy.length > 0) {
+        const rIdx = Math.floor(Math.random() * poolCopy.length);
+        wrongChoices.push(poolCopy.splice(rIdx, 1)[0]);
+    }
+
+    // 정답 1개 + 오답 3개 무작위 셔플
+    currentKoreanQuizChoices = [currentKoreanQuizTarget, ...wrongChoices];
+    currentKoreanQuizChoices.sort(() => Math.random() - 0.5);
+
+    // 3. UI 및 무작위 넘버블록스 캐릭터(1~50) 렌더링
+    const charZone = document.getElementById('korean-quiz-char-zone');
+    if (charZone) {
+        charZone.innerHTML = '';
+        const randVal = Math.floor(Math.random() * 50) + 1; // 1~50 무작위 넘버블록스
+        const block = createBlockElement(randVal);
+        block.classList.add('block-bounce');
+        charZone.appendChild(block);
+    }
+
+    renderKoreanQuizChoicesUI();
+
+    // 4. 음성 자동으로 정답 소리 재생
+    setTimeout(() => {
+        playKoreanQuizTargetAudio();
+    }, 350);
+}
+
+function renderKoreanQuizChoicesUI() {
+    const container = document.getElementById('korean-quiz-choices');
+    if (!container) return;
+
+    container.innerHTML = '';
+    currentKoreanQuizChoices.forEach(letter => {
+        const btn = document.createElement('button');
+        btn.className = 'korean-choice-btn';
+        btn.textContent = letter;
+        btn.onclick = () => onSelectKoreanQuizChoice(letter, btn);
+        container.appendChild(btn);
+    });
+}
+
+function playKoreanQuizTargetAudio() {
+    if (!currentKoreanQuizTarget) return;
+    playKoreanAudio(currentKoreanQuizTarget);
+}
+
+function onSelectKoreanQuizChoice(selectedLetter, btnEl) {
+    if (isKoreanQuizEvaluating) return;
+    isKoreanQuizEvaluating = true;
+
+    const feedbackLayer = document.getElementById('adventure-success-feedback');
+    const blockDisplay = document.getElementById('feedback-block-display');
+    const bubbleText = document.getElementById('feedback-bubble-text');
+
+    if (selectedLetter === currentKoreanQuizTarget) {
+        // 🎉 정답 선택!
+        koreanQuizCorrectCount++;
+        btnEl.classList.add('correct-choice');
+        playSound('success');
+        
+        // 칭찬 음성 & 말풍선 텍스트 턴제 순환 연동 (더하기 빼기 모험과 동일한 칭찬 말풍선 오버레이 출력!)
+        const praise = praiseRotationList[currentPraiseIndex];
+        playGoodJob(praise.audioSrc, praise.gain || 1.0);
+        currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+        if (feedbackLayer && bubbleText && blockDisplay) {
+            bubbleText.textContent = praise.text;
+            blockDisplay.innerHTML = '';
+            const randomCharVal = Math.floor(Math.random() * 20) + 1; // 1~20 중 무작위 넘버블록스
+            const rewardBlock = createBlockElement(randomCharVal);
+            blockDisplay.appendChild(rewardBlock);
+            feedbackLayer.classList.remove('hidden');
+        }
+
+        triggerConfetti();
+
+        // 2.2초 후 말풍선 레이어 닫고 다음 문제 진행
+        setTimeout(() => {
+            btnEl.classList.remove('correct-choice');
+            if (feedbackLayer) feedbackLayer.classList.add('hidden');
+            advanceKoreanQuizNextStep();
+        }, 2200);
+    } else {
+        // ❌ 오답 선택! (더하기 빼기 모험과 동일하게 틀린 피드백 주고 다음 문제 진행)
+        btnEl.classList.add('wrong-choice');
+        playSound('wrong');
+
+        if (feedbackLayer && bubbleText && blockDisplay) {
+            bubbleText.textContent = `아쉬워요! 정답은 '${currentKoreanQuizTarget}'입니다. 😢`;
+            blockDisplay.innerHTML = '';
+            const randomCharVal = Math.floor(Math.random() * 20) + 1;
+            const sadBlock = createBlockElement(randomCharVal);
+            sadBlock.classList.add('sad-face'); // 😢 슬픈 표정 블록!
+            blockDisplay.appendChild(sadBlock);
+            feedbackLayer.classList.remove('hidden');
+        }
+
+        setTimeout(() => {
+            btnEl.classList.remove('wrong-choice');
+            if (feedbackLayer) feedbackLayer.classList.add('hidden');
+            advanceKoreanQuizNextStep();
+        }, 2200);
+    }
+}
+
+function advanceKoreanQuizNextStep() {
+    koreanQuizQuestionIndex++;
+    if (koreanQuizQuestionIndex <= 10) {
+        generateKoreanQuizQuestion();
+    } else {
+        // 🎉 10문항 세트 완료! (10문제 다 맞추면 퍼펙트 완공 모달, 1개라도 틀리면 다시 도전 모달)
+        showKoreanQuizResultModal();
+    }
+}
+
+function showKoreanQuizResultModal() {
+    const modal = document.getElementById('modal-success');
+    const rewardCharZone = document.getElementById('modal-reward-character');
+    const modalText = document.getElementById('modal-text');
+    const modalTitle = document.getElementById('modal-title');
+    const nextBtn = document.getElementById('modal-next-btn');
+
+    rewardCharZone.innerHTML = '';
+
+    if (koreanQuizCorrectCount === 10) {
+        // 👑 10문제 모두 맞춘 경우 (퍼펙트 완공!)
+        playSound('success');
+        triggerConfetti(); // 🎉 폭죽 발사!
+
+        nextBtn.textContent = '단계 선택으로 🏠';
+        nextBtn.style.backgroundColor = '#4cd964';
+
+        const randomCharVal = Math.floor(Math.random() * 20) + 1;
+        const rewardChar = createBlockElement(randomCharVal);
+        rewardCharZone.appendChild(rewardChar);
+
+        modalTitle.textContent = '🎉 10문제 완공! 🎉';
+        modalText.innerHTML = `축하합니다!<br>10문제를 모두 완벽하게 맞췄어요!<br><strong>하성이가 정말 대단해요! 👍</strong>`;
+
+        nextBtn.onclick = () => {
+            modal.classList.add('hidden');
+            nextBtn.style.backgroundColor = '';
+            initKoreanQuizMode();
+        };
+    } else {
+        // 🥺 1개라도 틀린 경우 (다시 도전해 봐요!)
+        playSound('split');
+
+        nextBtn.textContent = '다시 시도하기 🔄';
+        nextBtn.style.backgroundColor = '#4cd964';
+
+        const randomCharVal = Math.floor(Math.random() * 20) + 1;
+        const sadChar = createBlockElement(randomCharVal);
+        sadChar.classList.add('sad-face'); // 😢 슬픈 표정 블록
+        rewardCharZone.appendChild(sadChar);
+
+        modalTitle.textContent = '🥺 다시 도전해 봐요! 🥺';
+        modalText.innerHTML = `10문항 중 <strong>${koreanQuizCorrectCount}개</strong>를 맞췄어요.<br>10문제를 다 맞아야 다음 단계로 갈 수 있어요.<br><strong>다시 시도해 보세요! 🔄</strong>`;
+
+        nextBtn.onclick = () => {
+            modal.classList.add('hidden');
+            nextBtn.style.backgroundColor = '';
+            startKoreanQuizStage(currentKoreanQuizStage); // 현재 단계 10문제 다시 시작
+        };
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// 이벤트 바인딩
+document.querySelectorAll('.korean-quiz-diff-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const stage = parseInt(e.currentTarget.dataset.stage, 10);
+        startKoreanQuizStage(stage);
+    });
+});
+
+const koreanQuizBackBtn = document.getElementById('korean-quiz-to-selector-btn');
+if (koreanQuizBackBtn) {
+    koreanQuizBackBtn.addEventListener('click', () => {
+        initKoreanQuizMode();
+        setBgmVolume(BGM_VOLUME_HIGH); // 단계 선택 화면 복귀: 소리 크게
+    });
+}
+
+const koreanQuizReplayBtn = document.getElementById('btn-korean-quiz-replay');
+if (koreanQuizReplayBtn) {
+    koreanQuizReplayBtn.addEventListener('click', () => {
+        playKoreanQuizTargetAudio();
+    });
+}
 
 // ==========================================
 // 8. 보호자 비밀번호 잠금 처리 (0608)

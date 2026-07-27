@@ -50,7 +50,11 @@
             </div>
             <div class="header-controls">
                 <div class="volume-control-wrapper">
-                    <button id="btn-sound-toggle" class="icon-btn" aria-label="음향 켜기/끄기">🔊</button>
+                    <button id="btn-sound-toggle" class="icon-btn" aria-label="음향 켜기/끄기" title="음향 켜기/끄기">🔊</button>
+                    <button id="btn-bgm-next" class="bgm-next-btn" aria-label="다음 곡 재생" title="다음 곡 재생">
+                        <span>⏭️</span>
+                        <span id="bgm-track-info" class="bgm-track-info">1/3</span>
+                    </button>
                     <div class="volume-slider-container">
                         <span class="volume-icon">🎵</span>
                         <input type="range" id="bgm-volume-slider" min="0" max="100" value="50" class="volume-slider" aria-label="배경음악 볼륨 조절" title="배경음악 볼륨 조절">
@@ -81,6 +85,16 @@
                         <div class="card-icon">✍️</div>
                         <h2>숫자 쓰기 연습</h2>
                         <p>터치 펜이나 손가락으로 숫자를 따라 써봐요!</p>
+                    </div>
+                    <div class="menu-card card-korean-tracing" id="menu-korean-tracing">
+                        <div class="card-icon">🔤</div>
+                        <h2>한글 쓰기 연습</h2>
+                        <p>아/야/어/여와 가/나/다/라를 예쁘게 써봐요!</p>
+                    </div>
+                    <div class="menu-card card-korean-quiz" id="menu-korean-quiz">
+                        <div class="card-icon">🎧</div>
+                        <h2>한글 찾기 연습</h2>
+                        <p>소리를 듣고 알맞은 한글을 맞춰봐요!</p>
                     </div>
                 </div>
             </section>
@@ -173,14 +187,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 정답 축하 스페셜 말풍선 오버레이 레이어 -->
-                <div id="adventure-success-feedback" class="adventure-feedback-layer hidden">
-                    <div class="feedback-content">
-                        <div class="feedback-bubble" id="feedback-bubble-text">잘했어, 하성아! 🎉</div>
-                        <div id="feedback-block-display" class="feedback-block-display"></div>
-                    </div>
-                </div>
             </section>
 
             <!-- 2-D. 숫자 쓰기 연습 화면 (터치 펜 최적화 & 1~5단계 난이도) -->
@@ -244,7 +250,113 @@
                     </div>
                 </div>
             </section>
+
+            <!-- 2-E. 한글 쓰기 연습 화면 -->
+            <section id="screen-korean-tracing" class="screen hidden">
+                <!-- 1. 난이도 선택 메뉴 화면 -->
+                <div id="korean-tracing-selector-screen" class="adventure-selector-screen">
+                    <h2>🔤 한글 쓰기 단계 선택</h2>
+                    <p class="selector-desc">연습하고 싶은 단계를 선택해 주세요! 🌱</p>
+                    
+                    <div class="difficulty-grid">
+                        <button class="korean-tracing-diff-btn diff-btn" data-stage="1">
+                            <span class="diff-title">1단계 🌱</span>
+                            <span class="diff-info">기초 모음 (아 ~ 이 쓰기 10자)</span>
+                        </button>
+                        <button class="korean-tracing-diff-btn diff-btn" data-stage="2">
+                            <span class="diff-title">2단계 🌟</span>
+                            <span class="diff-info">기초 가목 (가 ~ 하 쓰기 14자)</span>
+                        </button>
+                    </div>
+                    
+                    <button class="selector-back-btn" onclick="switchMode('home')">메인 홈으로 🏠</button>
+                </div>
+
+                <!-- 2. 실제 게임 플레이 영역 -->
+                <div id="korean-tracing-game-playzone" class="tracing-game-playzone hidden">
+                    <div class="game-header">
+                        <div class="header-left-group">
+                            <button class="header-back-btn" id="korean-tracing-to-selector-btn">⬅️ 단계 선택</button>
+                            <h2>🔤 한글 쓰기 연습</h2>
+                        </div>
+                        <p class="hint-text">터치 펜이나 손가락으로 가이드 선을 따라 한글을 써 보세요!</p>
+                    </div>
+                    <div class="tracing-layout">
+                        <!-- 한글 글자 선택 사이드바 -->
+                        <div class="number-selector" id="korean-letter-selector">
+                        </div>
+                        
+                        <!-- 쓰기 캔버스 영역 -->
+                        <div class="canvas-container">
+                            <canvas id="korean-tracing-canvas" width="500" height="500"></canvas>
+                            <div id="korean-tracing-feedback" class="hidden">참 잘했어요! 🎉</div>
+                        </div>
+
+                        <!-- 캐릭터 보상 애니메이션 영역 (1~50 무작위 넘버블록스) -->
+                        <div class="tracing-reward" id="korean-tracing-reward-zone">
+                            <div class="reward-placeholder">한글을 예쁘게 쓰면 넘버블록 친구가 나타나요! ✨</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-F. 한글 찾기 연습 (듣기 퀴즈) 화면 -->
+            <section id="screen-korean-quiz" class="screen hidden">
+                <!-- 1. 단계 선택 화면 -->
+                <div id="korean-quiz-selector-screen" class="tracing-selector-screen">
+                    <h2>🎧 한글 찾기 단계 선택 🎧</h2>
+                    <p class="selector-subtitle">소리를 듣고 알맞은 한글을 찾아보세요!</p>
+                    
+                    <div class="diff-btn-group">
+                        <button class="korean-quiz-diff-btn diff-btn" data-stage="1">
+                            <span class="diff-title">1단계 🌱 (기초 모음)</span>
+                            <span class="diff-info">아, 야, 어, 여, 오, 요, 우, 유, 으, 이</span>
+                        </button>
+                        <button class="korean-quiz-diff-btn diff-btn" data-stage="2">
+                            <span class="diff-title">2단계 🌟 (기초 자음)</span>
+                            <span class="diff-info">가~하 소리 듣고 찾기</span>
+                        </button>
+                    </div>
+                    
+                    <button class="selector-back-btn" onclick="switchMode('home')">메인 홈으로 🏠</button>
+                </div>
+
+                <!-- 2. 실제 퀴즈 플레이 영역 -->
+                <div id="korean-quiz-game-playzone" class="tracing-game-playzone hidden">
+                    <div class="game-header">
+                        <div class="header-left-group">
+                            <button class="header-back-btn" id="korean-quiz-to-selector-btn">⬅️ 단계 선택</button>
+                            <h2>🎧 한글 찾기 연습</h2>
+                        </div>
+                        <div class="score-board">문제 <span id="korean-quiz-stage">1</span>/10</div>
+                    </div>
+
+                    <div class="korean-quiz-container">
+                        <!-- 음성 재재생 큼직한 버튼 -->
+                        <div class="korean-quiz-question-box">
+                            <div id="korean-quiz-char-zone" class="korean-quiz-char-zone"></div>
+                            <button id="btn-korean-quiz-replay" class="korean-audio-replay-btn">
+                                <span class="speaker-icon">🔊</span>
+                                <span class="replay-text">소리 다시 듣기</span>
+                            </button>
+                        </div>
+
+                        <!-- 4지선다형 카드 버튼 그리드 -->
+                        <div class="korean-choices-container" id="korean-quiz-choices">
+                            <!-- 4개의 보기 버튼이 JS로 자동 생성됨 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
+
+        <!-- 정답 축하 스페셜 말풍선 오버레이 레이어 (모든 모드 공통 전역 팝업) -->
+        <div id="adventure-success-feedback" class="adventure-feedback-layer hidden">
+            <div class="feedback-content">
+                <div class="feedback-bubble" id="feedback-bubble-text">잘했어, 하성아! 🎉</div>
+                <div id="feedback-block-display" class="feedback-block-display"></div>
+            </div>
+        </div>
 
         <!-- 3. 푸터 / 팝업 효과음 및 성공 모달 -->
         <div id="modal-success" class="modal hidden">
