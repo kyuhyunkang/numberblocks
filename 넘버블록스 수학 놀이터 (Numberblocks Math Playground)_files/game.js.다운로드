@@ -1761,6 +1761,11 @@ function startKoreanTracingStage(stageNum) {
     renderKoreanLetterSelector();
     initKoreanTracing();
     bindKoreanCanvasEvents();
+
+    // 진입 직후 첫 글자에 대한 한글 음성 자동 재생
+    setTimeout(() => {
+        playKoreanAudio(currentKoreanLetter);
+    }, 250);
 }
 
 function renderKoreanLetterSelector() {
@@ -2074,6 +2079,11 @@ function successKoreanTracing() {
             currentKoreanLetter = currentKoreanStageList[0];
         }
         initKoreanTracing();
+
+        // 새로 바뀐 글자에 대한 한글 음성 자동 재생
+        setTimeout(() => {
+            playKoreanAudio(currentKoreanLetter);
+        }, 200);
     }, 2200);
 }
 
