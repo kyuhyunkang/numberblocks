@@ -1889,11 +1889,6 @@ function initKoreanTracing() {
         const container = document.createElement('div');
         container.className = 'tracing-name-reward-container';
 
-        const title = document.createElement('div');
-        title.className = 'tracing-name-reward-title';
-        title.textContent = `✍️ ${currentTracingNameObj.name} 쓰기 (${currentTracingNameCharIndex + 1}/${currentTracingNameObj.name.length})`;
-        container.appendChild(title);
-
         const badgesRow = document.createElement('div');
         badgesRow.className = 'tracing-name-badges';
 
@@ -2183,69 +2178,141 @@ function evaluateKoreanTracing() {
 
 function successKoreanTracing() {
     kIsSuccessState = true;
-    playSound('success');
-    triggerConfetti(); // 🎉 폭죽 축하 애니메이션 발사!
-    
-    // 칭찬 음성 & 말풍선 텍스트 턴제 순환 연동 (더하기 빼기 모험과 동일한 칭찬 말풍선 오버레이 출력!)
+
     const feedbackLayer = document.getElementById('adventure-success-feedback');
     const blockDisplay = document.getElementById('feedback-block-display');
     const bubbleText = document.getElementById('feedback-bubble-text');
-
-    const praise = praiseRotationList[currentPraiseIndex];
-    playGoodJob(praise.audioSrc, praise.gain || 1.0);
-    currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
-
-    if (feedbackLayer && bubbleText && blockDisplay) {
-        bubbleText.textContent = praise.text;
-        blockDisplay.innerHTML = '';
-        const randomCharVal = Math.floor(Math.random() * 20) + 1; // 1~20 중 무작위 넘버블록스
-        const rewardBlock = createBlockElement(randomCharVal);
-        blockDisplay.appendChild(rewardBlock);
-        feedbackLayer.classList.remove('hidden');
-    }
-
     const feedback = document.getElementById('korean-tracing-feedback');
     const rewardZone = document.getElementById('korean-tracing-reward-zone');
-    
-    if (feedback) {
-        feedback.textContent = `참 잘했어요! '${currentKoreanLetter}' 🎉`;
-        feedback.style.animation = 'none';
-        void feedback.offsetWidth; // Reflow 강제하여 애니메이션 재트리거
-        feedback.style.animation = '';
-        feedback.classList.remove('hidden');
-    }
-    
-    // 1~20가지 넘버블록스 원작 캐릭터 중 1개 무작위 선택하여 보상 제공!
-    if (rewardZone) {
-        rewardZone.innerHTML = '';
-        const randomCharVal = Math.floor(Math.random() * 20) + 1;
-        const block = createBlockElement(randomCharVal);
-        block.style.position = 'relative';
-        block.style.left = '0';
-        block.style.top = '0';
-        
-        rewardZone.appendChild(block);
-        block.classList.add('block-bounce');
-    }
 
-    setTimeout(() => {
-        if (feedback) feedback.classList.add('hidden');
-        if (feedbackLayer) feedbackLayer.classList.add('hidden');
-        kIsSuccessState = false;
-        
-        const currIdx = currentKoreanStageList.indexOf(currentKoreanLetter);
-        if (currIdx >= 0 && currIdx < currentKoreanStageList.length - 1) {
-            currentKoreanLetter = currentKoreanStageList[currIdx + 1];
+    if (currentKoreanTracingStage === 3 && currentTracingNameObj) {
+        const nameStr = currentTracingNameObj.name;
+
+        if (currentTracingNameCharIndex < nameStr.length - 1) {
+            // 이름 내 음절 1개 작성 완료! (예: '강' ➔ '규'로 즉시 연속 이동)
+            playSound('pop');
+
+            currentTracingNameCharIndex++;
+            currentKoreanLetter = nameStr[currentTracingNameCharIndex];
+
+            setTimeout(() => {
+                kIsSuccessState = false;
+                initKoreanTracing();
+                setTimeout(() => {
+                    playKoreanAudio(currentKoreanLetter);
+                }, 100);
+            }, 300);
         } else {
-            currentKoreanLetter = currentKoreanStageList[0];
-        }
-        initKoreanTracing();
+            // 🎉 이름 전체 (2~3글자) 완공! (예: '강규현' 작성 완료)
+            playSound('success');
+            triggerConfetti();
 
-        // 새로 바뀐 글자에 대한 한글 음성 자동 재생
+            const praise = praiseRotationList[currentPraiseIndex];
+            playGoodJob(praise.audioSrc, praise.gain || 1.0);
+            currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+            if (feedbackLayer && bubbleText && blockDisplay) {
+                bubbleText.textContent = `Excellent! ${nameStr}! 🔥`;
+                blockDisplay.innerHTML = '';
+                const randomCharVal = Math.floor(Math.random() * 20) + 1;
+                const rewardBlock = createBlockElement(randomCharVal);
+                blockDisplay.appendChild(rewardBlock);
+                feedbackLayer.classList.remove('hidden');
+            }
+
+            if (rewardZone) {
+                rewardZone.innerHTML = '';
+                const container = document.createElement('div');
+                container.className = 'tracing-name-reward-container';
+
+                const badgesRow = document.createElement('div');
+                badgesRow.className = 'tracing-name-badges';
+                for (let i = 0; i < nameStr.length; i++) {
+                    const badge = document.createElement('div');
+                    badge.className = 'tracing-name-badge completed';
+                    badge.textContent = nameStr[i];
+                    badgesRow.appendChild(badge);
+                }
+                container.appendChild(badgesRow);
+                rewardZone.appendChild(container);
+            }
+
+            setTimeout(() => {
+                if (feedbackLayer) feedbackLayer.classList.add('hidden');
+                kIsSuccessState = false;
+
+                const currIdx = KOREAN_STAGE_3_NAMES.findIndex(n => n.name === currentTracingNameObj.name);
+                if (currIdx >= 0 && currIdx < KOREAN_STAGE_3_NAMES.length - 1) {
+                    currentTracingNameObj = KOREAN_STAGE_3_NAMES[currIdx + 1];
+                } else {
+                    currentTracingNameObj = KOREAN_STAGE_3_NAMES[0];
+                }
+                currentTracingNameCharIndex = 0;
+                currentKoreanLetter = currentTracingNameObj.name[0];
+
+                initKoreanTracing();
+                renderKoreanLetterSelector();
+
+                setTimeout(() => {
+                    playNameAudio(currentTracingNameObj);
+                }, 250);
+            }, 2200);
+        }
+    } else {
+        // 1단계, 2단계 기존 단일 글자 완공 처리
+        playSound('success');
+        triggerConfetti();
+
+        const praise = praiseRotationList[currentPraiseIndex];
+        playGoodJob(praise.audioSrc, praise.gain || 1.0);
+        currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+        if (feedbackLayer && bubbleText && blockDisplay) {
+            bubbleText.textContent = praise.text;
+            blockDisplay.innerHTML = '';
+            const randomCharVal = Math.floor(Math.random() * 20) + 1;
+            const rewardBlock = createBlockElement(randomCharVal);
+            blockDisplay.appendChild(rewardBlock);
+            feedbackLayer.classList.remove('hidden');
+        }
+
+        if (feedback) {
+            feedback.textContent = `참 잘했어요! '${currentKoreanLetter}' 🎉`;
+            feedback.style.animation = 'none';
+            void feedback.offsetWidth;
+            feedback.style.animation = '';
+            feedback.classList.remove('hidden');
+        }
+
+        if (rewardZone) {
+            rewardZone.innerHTML = '';
+            const randomCharVal = Math.floor(Math.random() * 20) + 1;
+            const block = createBlockElement(randomCharVal);
+            block.style.position = 'relative';
+            block.style.left = '0';
+            block.style.top = '0';
+            rewardZone.appendChild(block);
+            block.classList.add('block-bounce');
+        }
+
         setTimeout(() => {
-            playKoreanAudio(currentKoreanLetter);
-        }, 200);
-    }, 2200);
+            if (feedback) feedback.classList.add('hidden');
+            if (feedbackLayer) feedbackLayer.classList.add('hidden');
+            kIsSuccessState = false;
+
+            const currIdx = currentKoreanStageList.indexOf(currentKoreanLetter);
+            if (currIdx >= 0 && currIdx < currentKoreanStageList.length - 1) {
+                currentKoreanLetter = currentKoreanStageList[currIdx + 1];
+            } else {
+                currentKoreanLetter = currentKoreanStageList[0];
+            }
+            initKoreanTracing();
+
+            setTimeout(() => {
+                playKoreanAudio(currentKoreanLetter);
+            }, 200);
+        }, 2200);
+    }
 }
 
 // 한글 쓰기 단계 선택 버튼 바인딩
