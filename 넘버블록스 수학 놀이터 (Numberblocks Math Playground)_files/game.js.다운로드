@@ -1718,6 +1718,54 @@ const baseKoreanGuides = {
     ]
 };
 
+// ==========================================
+// 7-B. 🔤 한글 쓰기 연습 (Korean Tracing System - 1단계: 모음 10자, 2단계: 자음/가목 14자, 3단계: 이름 쓰기 15명)
+// ==========================================
+const KOREAN_STAGE_1 = ['아', '야', '어', '여', '오', '요', '우', '유', '으', '이'];
+const KOREAN_STAGE_2 = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+const KOREAN_STAGE_3_NAMES = [
+    { name: '강하성', audio: './한글/name/강하성.mp3' },
+    { name: '강규현', audio: './한글/name/강규현.mp3' },
+    { name: '장미', audio: './한글/name/장미.mp3' },
+    { name: '강다윤', audio: './한글/name/강다윤.mp3' },
+    { name: '구하나', audio: './한글/name/구하나.mp3' },
+    { name: '김로운', audio: './한글/name/김로운.mp3' },
+    { name: '김서후', audio: './한글/name/김서후.mp3' },
+    { name: '김세린', audio: './한글/name/김세린.mp3' },
+    { name: '박지온', audio: './한글/name/박지온.mp3' },
+    { name: '이도하', audio: './한글/name/이도하.mp3' },
+    { name: '이준', audio: './한글/name/이준.mp3' },
+    { name: '이해빈', audio: './한글/name/이해빈.mp3' },
+    { name: '전우주', audio: './한글/name/전우주.mp3' },
+    { name: '정하루', audio: './한글/name/전하루.mp3' },
+    { name: '김슬애', audio: './한글/name/김슬애.mp3' }
+];
+
+let currentKoreanTracingStage = 1; // 1, 2, 3
+let currentTracingNameObj = null;  // 3단계 선택된 이름 객체
+let currentTracingNameCharIndex = 0; // 3단계 이름 내 현재 음절 위치
+
+let currentKoreanStageList = KOREAN_STAGE_1;
+let currentKoreanLetter = '아';
+
+// 한글 음성 파일 재생 함수 (./한글/{letter}.mp3)
+function playKoreanAudio(letter) {
+    if (!soundEnabled) return;
+    const audio = new Audio(`./한글/${letter}.mp3`);
+    const vol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8);
+    audio.volume = Math.max(0, Math.min(1.0, vol));
+    audio.play().catch(err => console.log("한글 음성 재생 오류:", err));
+}
+
+// 이름 음성 재생
+function playNameAudio(nameObj) {
+    if (!soundEnabled) return;
+    const audio = new Audio(nameObj.audio);
+    const vol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8);
+    audio.volume = Math.max(0, Math.min(1.0, vol));
+    audio.play().catch(err => console.log("이름 음성 재생 오류:", err));
+}
+
 let kIsDrawing = false;
 let kIsSuccessState = false;
 let kDrawPoints = [];
@@ -1750,8 +1798,20 @@ function initKoreanTracingMode() {
 }
 
 function startKoreanTracingStage(stageNum) {
-    currentKoreanStageList = stageNum === 1 ? KOREAN_STAGE_1 : KOREAN_STAGE_2;
-    currentKoreanLetter = currentKoreanStageList[0];
+    currentKoreanTracingStage = stageNum;
+
+    if (stageNum === 1) {
+        currentKoreanStageList = KOREAN_STAGE_1;
+        currentKoreanLetter = currentKoreanStageList[0];
+    } else if (stageNum === 2) {
+        currentKoreanStageList = KOREAN_STAGE_2;
+        currentKoreanLetter = currentKoreanStageList[0];
+    } else {
+        // 3단계: 이름 쓰기
+        currentTracingNameObj = KOREAN_STAGE_3_NAMES[0];
+        currentTracingNameCharIndex = 0;
+        currentKoreanLetter = currentTracingNameObj.name[0];
+    }
 
     const selectorScreen = document.getElementById('korean-tracing-selector-screen');
     const gamePlayzone = document.getElementById('korean-tracing-game-playzone');
@@ -1765,9 +1825,13 @@ function startKoreanTracingStage(stageNum) {
     initKoreanTracing();
     bindKoreanCanvasEvents();
 
-    // 진입 직후 첫 글자에 대한 한글 음성 자동 재생
+    // 음성 자동 재생
     setTimeout(() => {
-        playKoreanAudio(currentKoreanLetter);
+        if (currentKoreanTracingStage === 3 && currentTracingNameObj) {
+            playNameAudio(currentTracingNameObj);
+        } else {
+            playKoreanAudio(currentKoreanLetter);
+        }
     }, 250);
 }
 
@@ -1776,22 +1840,47 @@ function renderKoreanLetterSelector() {
     if (!container) return;
     container.innerHTML = '';
 
-    currentKoreanStageList.forEach(letter => {
-        const btn = document.createElement('button');
-        btn.className = `num-select-btn ${letter === currentKoreanLetter ? 'active' : ''}`;
-        btn.dataset.letter = letter;
-        btn.textContent = letter;
-        
-        btn.addEventListener('click', () => {
-            currentKoreanLetter = letter;
-            document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            playKoreanAudio(letter);
-            initKoreanTracing();
-        });
+    if (currentKoreanTracingStage === 3) {
+        // 3단계: 15명 성함 버튼 컴팩트 바인딩
+        KOREAN_STAGE_3_NAMES.forEach(nameObj => {
+            const btn = document.createElement('button');
+            const isActive = currentTracingNameObj && currentTracingNameObj.name === nameObj.name;
+            btn.className = `num-select-btn is-name ${isActive ? 'active' : ''}`;
+            btn.dataset.name = nameObj.name;
+            btn.textContent = nameObj.name;
 
-        container.appendChild(btn);
-    });
+            btn.addEventListener('click', () => {
+                currentTracingNameObj = nameObj;
+                currentTracingNameCharIndex = 0;
+                currentKoreanLetter = nameObj.name[0];
+
+                document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                playNameAudio(nameObj);
+                initKoreanTracing();
+            });
+
+            container.appendChild(btn);
+        });
+    } else {
+        currentKoreanStageList.forEach(letter => {
+            const btn = document.createElement('button');
+            btn.className = `num-select-btn ${letter === currentKoreanLetter ? 'active' : ''}`;
+            btn.dataset.letter = letter;
+            btn.textContent = letter;
+            
+            btn.addEventListener('click', () => {
+                currentKoreanLetter = letter;
+                document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                playKoreanAudio(letter);
+                initKoreanTracing();
+            });
+
+            container.appendChild(btn);
+        });
+    }
 }
 
 function initKoreanTracing() {
@@ -1812,8 +1901,39 @@ function initKoreanTracing() {
 
     if (feedback) feedback.classList.add('hidden');
     
-    // 처음 진입 시 50가지 중 무작위 넘버블록스 보상 캐릭터 미리보기
-    if (rewardZone) {
+    // 3단계 이름 쓰기 시 우측 보상 영역에 넘버블록스 그림 대신 전체 성함 배지 카드 출력!
+    if (currentKoreanTracingStage === 3 && currentTracingNameObj && rewardZone) {
+        rewardZone.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'tracing-name-reward-container';
+
+        const title = document.createElement('div');
+        title.className = 'tracing-name-reward-title';
+        title.textContent = `✍️ ${currentTracingNameObj.name} 쓰기 (${currentTracingNameCharIndex + 1}/${currentTracingNameObj.name.length})`;
+        container.appendChild(title);
+
+        const badgesRow = document.createElement('div');
+        badgesRow.className = 'tracing-name-badges';
+
+        const nameStr = currentTracingNameObj.name;
+        for (let i = 0; i < nameStr.length; i++) {
+            const badge = document.createElement('div');
+            badge.className = 'tracing-name-badge';
+            if (i < currentTracingNameCharIndex) {
+                badge.classList.add('completed');
+                badge.textContent = nameStr[i];
+            } else if (i === currentTracingNameCharIndex) {
+                badge.classList.add('active');
+                badge.textContent = nameStr[i];
+            } else {
+                badge.textContent = nameStr[i];
+            }
+            badgesRow.appendChild(badge);
+        }
+        container.appendChild(badgesRow);
+        rewardZone.appendChild(container);
+    } else if (rewardZone) {
+        // 1단계, 2단계: 50가지 중 무작위 넘버블록스 보상 캐릭터 미리보기
         rewardZone.innerHTML = '';
         const randomCharVal = Math.floor(Math.random() * 50) + 1;
         const previewBlock = createBlockElement(randomCharVal);
@@ -1824,10 +1944,18 @@ function initKoreanTracing() {
     }
     
     document.querySelectorAll('#korean-letter-selector .num-select-btn').forEach(btn => {
-        if (btn.dataset.letter === currentKoreanLetter) {
-            btn.classList.add('active');
+        if (currentKoreanTracingStage === 3) {
+            if (btn.dataset.name === (currentTracingNameObj && currentTracingNameObj.name)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         } else {
-            btn.classList.remove('active');
+            if (btn.dataset.letter === currentKoreanLetter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         }
     });
 
@@ -1877,7 +2005,7 @@ function drawKoreanCanvasTemplate() {
     if (!kCtx || !kCanvas) return;
     kCtx.clearRect(0, 0, kCanvas.width, kCanvas.height);
     
-    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides[currentKoreanLetter[0]] || baseKoreanGuides['아'];
     
     // 1. 회색 기초 라인
     strokes.forEach(stroke => {
@@ -1948,17 +2076,23 @@ function bindKoreanCanvasEvents() {
         checkKoreanTracingPoint(x, y);
     });
 
-    const handlePointerEnd = (e) => {
+    canvasEl.addEventListener('pointerup', (e) => {
         if (!kIsDrawing) return;
         kIsDrawing = false;
         try {
             canvasEl.releasePointerCapture(e.pointerId);
         } catch(err) {}
         evaluateKoreanTracing();
-    };
+    });
 
-    canvasEl.addEventListener('pointerup', handlePointerEnd);
-    canvasEl.addEventListener('pointercancel', handlePointerEnd);
+    canvasEl.addEventListener('pointercancel', (e) => {
+        if (!kIsDrawing) return;
+        kIsDrawing = false;
+        try {
+            canvasEl.releasePointerCapture(e.pointerId);
+        } catch(err) {}
+        evaluateKoreanTracing();
+    });
 }
 
 function drawKoreanUserPath() {
