@@ -1983,11 +1983,53 @@ function drawKoreanBezierStroke(strokeObj, strokeStyle, lineWidth, isDashed = fa
     kCtx.setLineDash([]);
 }
 
+// 한글 음절에 맞는 획 가이드 추출 (복합 음절인 경우 초성 매핑 적용)
+function getKoreanGuideForLetter(letter) {
+    if (!letter) return baseKoreanGuides['아'];
+    if (baseKoreanGuides[letter]) return baseKoreanGuides[letter];
+    
+    // 한글 음절 초성(Initial Consonant) 계산하여 '가'~'하' 매핑
+    const code = letter.charCodeAt(0) - 0xAC00;
+    if (code >= 0 && code <= 11172) {
+        const initialIdx = Math.floor(code / 588);
+        const initialMap = {
+            0: '가', 1: '가', // ㄱ, ㄲ
+            2: '나',          // ㄴ
+            3: '다', 4: '다', // ㄷ, ㄸ
+            5: '라',          // ㄹ
+            6: '마',          // ㅁ
+            7: '바', 8: '바', // ㅂ, ㅃ
+            9: '사', 10: '사',// ㅅ, ㅆ
+            11: '아',         // ㅇ
+            12: '자', 13: '자',// ㅈ, ㅉ
+            14: '차',         // ㅊ
+            15: '카',         // ㅋ
+            16: '타',         // ㅌ
+            17: '파',         // ㅍ
+            18: '하'          // ㅎ
+        };
+        const mappedBase = initialMap[initialIdx] || '가';
+        if (baseKoreanGuides[mappedBase]) return baseKoreanGuides[mappedBase];
+    }
+    return baseKoreanGuides['아'];
+}
+
 function drawKoreanCanvasTemplate() {
     if (!kCtx || !kCanvas) return;
     kCtx.clearRect(0, 0, kCanvas.width, kCanvas.height);
     
-    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides[currentKoreanLetter[0]] || baseKoreanGuides['아'];
+    // 0. 캔버스 중앙 배경에 실제 쓰려는 목표 글자(예: '강', '규', '현') 은은한 워터마크 렌더링
+    if (currentKoreanLetter) {
+        kCtx.save();
+        kCtx.font = 'bold 220px Gowun Dodum';
+        kCtx.fillStyle = 'rgba(203, 213, 225, 0.25)';
+        kCtx.textAlign = 'center';
+        kCtx.textBaseline = 'middle';
+        kCtx.fillText(currentKoreanLetter, kCanvas.width / 2, kCanvas.height / 2 + 10);
+        kCtx.restore();
+    }
+
+    const strokes = getKoreanGuideForLetter(currentKoreanLetter);
     
     // 1. 회색 기초 라인
     strokes.forEach(stroke => {
@@ -2085,7 +2127,7 @@ function drawKoreanUserPath() {
 }
 
 function checkKoreanTracingPoint(x, y) {
-    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    const strokes = getKoreanGuideForLetter(currentKoreanLetter);
     if (kCurrentStrokeIndex >= strokes.length) return;
 
     const activePoints = getKoreanStrokePoints(strokes[kCurrentStrokeIndex]);
@@ -2101,7 +2143,7 @@ function checkKoreanTracingPoint(x, y) {
 }
 
 function evaluateKoreanTracing() {
-    const strokes = baseKoreanGuides[currentKoreanLetter] || baseKoreanGuides['아'];
+    const strokes = getKoreanGuideForLetter(currentKoreanLetter);
     if (kCurrentStrokeIndex >= strokes.length) return;
 
     const activeStroke = strokes[kCurrentStrokeIndex];
