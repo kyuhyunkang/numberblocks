@@ -1555,24 +1555,6 @@ document.querySelectorAll('.num-select-btn').forEach(btn => {
 
 // 숫자 쓰기 초기화는 상단 숫자 선택 시 또는 획 실패 시 자동으로 트리거됩니다.
 
-// ==========================================
-// 7-B. 🔤 한글 쓰기 연습 (Korean Tracing System - 1단계: 모음 10자, 2단계: 자음/가목 14자)
-// ==========================================
-const KOREAN_STAGE_1 = ['아', '야', '어', '여', '오', '요', '우', '유', '으', '이'];
-const KOREAN_STAGE_2 = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
-
-let currentKoreanStageList = KOREAN_STAGE_1;
-let currentKoreanLetter = '아';
-
-// 한글 음성 파일 재생 함수 (./한글/{letter}.mp3)
-function playKoreanAudio(letter) {
-    if (!soundEnabled) return;
-    const audio = new Audio(`./한글/${letter}.mp3`);
-    const vol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8);
-    audio.volume = Math.max(0, Math.min(1.0, vol));
-    audio.play().catch(err => console.log("한글 음성 재생 오류:", err));
-}
-
 // 획 좌표 가이드 데이터베이스 (500x500 캔버스 기준 - 정중앙 수직 배치 및 꺽임 각도 직선 보정)
 const baseKoreanGuides = {
     // 1단계 기초 모음 10자 (정중앙 밸런스 정렬)
