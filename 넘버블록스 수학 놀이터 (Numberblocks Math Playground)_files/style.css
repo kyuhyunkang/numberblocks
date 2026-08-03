@@ -2569,21 +2569,31 @@ main {
     transform: scale(1.05) !important;
 }
 
-.korean-quiz-diff-btn[data-stage="3"] .diff-title {
-    color: #ffffff !important;
-    font-size: 22px !important;
-    font-weight: 800 !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+/* 3단계 🔥 이름 찾기/쓰기 카드 (핫 핑크 & 바이올렛 퍼플 3D 그래디언트) */
+.korean-quiz-diff-btn[data-stage="3"],
+.korean-tracing-diff-btn[data-stage="3"] {
+    background: linear-gradient(135deg, #ff416c 0%, #8a2be2 100%) !important;
+    box-shadow: 0 10px 25px rgba(233, 30, 99, 0.45), 0 6px 0 #6b21a8 !important;
 }
 
-.korean-quiz-diff-btn[data-stage="3"] .diff-info {
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    background: transparent !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
+.korean-quiz-diff-btn[data-stage="3"] .diff-title,
+.korean-tracing-diff-btn[data-stage="3"] .diff-title {
+    color: #ffffff !important;
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.korean-quiz-diff-btn[data-stage="3"] .diff-info,
+.korean-tracing-diff-btn[data-stage="3"] .diff-info {
+    color: #ffffff !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    padding: 6px 16px !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(4px) !important;
 }
 
 /* 🏷️ 한글 찾기 3단계 전용 이름 슬롯 스타일 */
@@ -2694,8 +2704,173 @@ main {
 }
 
 /* ----------------------------------------------------
-   🎧 5번째 카드: 한글 찾기 연습 메인 카드 & 퀴즈 UI
+   🎧/🔤 한글 찾기 및 쓰기 연습 단계 선택 화면 디자인 일관성 개편
 ---------------------------------------------------- */
+#korean-quiz-selector-screen:not(.hidden),
+#korean-tracing-selector-screen:not(.hidden) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    max-width: 600px !important;
+    margin: 20px auto !important;
+    padding: 30px 25px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 28px !important;
+    box-shadow: var(--shadow-strong) !important;
+    border: 5px solid #b5e2ff !important;
+}
+
+#korean-quiz-selector-screen h2,
+#korean-tracing-selector-screen h2 {
+    font-size: 28px !important;
+    color: #2c3e50 !important;
+    font-weight: 800 !important;
+    margin-bottom: 6px !important;
+}
+
+#korean-quiz-selector-screen .selector-subtitle,
+#korean-tracing-selector-screen .selector-subtitle {
+    font-size: 15px !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    margin-bottom: 22px !important;
+}
+
+#korean-quiz-selector-screen .diff-btn-group,
+#korean-tracing-selector-screen .diff-btn-group {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+}
+
+/* 3D 그래디언트 단계 선택 버튼 (높이 및 여백 최적화) */
+.korean-quiz-diff-btn,
+.korean-tracing-diff-btn {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 16px 24px !important;
+    border-radius: 20px !important;
+    border: 3.5px solid #ffffff !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    text-align: left !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+}
+
+.korean-quiz-diff-btn:hover,
+.korean-tracing-diff-btn:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+}
+
+.korean-quiz-diff-btn:active,
+.korean-tracing-diff-btn:active {
+    transform: translateY(2px) scale(0.98) !important;
+}
+
+/* 1단계 🌱 기초 모음 카드 (오렌지-피치 3D 그래디언트) */
+.korean-quiz-diff-btn[data-stage="1"],
+.korean-tracing-diff-btn[data-stage="1"] {
+    background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%) !important;
+    box-shadow: 0 8px 20px rgba(255, 126, 95, 0.35), 0 5px 0 #d95338 !important;
+}
+
+.korean-quiz-diff-btn[data-stage="1"] .diff-title,
+.korean-tracing-diff-btn[data-stage="1"] .diff-title {
+    color: #ffffff !important;
+    font-size: 23px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.korean-quiz-diff-btn[data-stage="1"] .diff-info,
+.korean-tracing-diff-btn[data-stage="1"] .diff-info {
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    padding: 5px 14px !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* 2단계 🌟 기초 자음 카드 (네온 블루 3D 그래디언트) */
+.korean-quiz-diff-btn[data-stage="2"],
+.korean-tracing-diff-btn[data-stage="2"] {
+    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
+    box-shadow: 0 8px 20px rgba(0, 114, 255, 0.35), 0 5px 0 #0052b3 !important;
+}
+
+.korean-quiz-diff-btn[data-stage="2"] .diff-title,
+.korean-tracing-diff-btn[data-stage="2"] .diff-title {
+    color: #ffffff !important;
+    font-size: 23px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.korean-quiz-diff-btn[data-stage="2"] .diff-info,
+.korean-tracing-diff-btn[data-stage="2"] .diff-info {
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    padding: 5px 14px !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* 3단계 🔥 이름 찾기/쓰기 카드 (핫 핑크 & 바이올렛 퍼플 3D 그래디언트) */
+.korean-quiz-diff-btn[data-stage="3"],
+.korean-tracing-diff-btn[data-stage="3"] {
+    background: linear-gradient(135deg, #ff416c 0%, #8a2be2 100%) !important;
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.4), 0 5px 0 #6b21a8 !important;
+}
+
+.korean-quiz-diff-btn[data-stage="3"] .diff-title,
+.korean-tracing-diff-btn[data-stage="3"] .diff-title {
+    color: #ffffff !important;
+    font-size: 23px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.korean-quiz-diff-btn[data-stage="3"] .diff-info,
+.korean-tracing-diff-btn[data-stage="3"] .diff-info {
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    padding: 5px 14px !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* 🏠 메인 홈으로 버튼 돋보이게 개선 */
+#korean-quiz-selector-screen .selector-back-btn,
+#korean-tracing-selector-screen .selector-back-btn {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+    color: #ffffff !important;
+    border: 3px solid #ffffff !important;
+    box-shadow: 0 6px 15px rgba(71, 85, 105, 0.3), 0 4px 0 #334155 !important;
+    font-size: 16px !important;
+    padding: 10px 26px !important;
+    margin-top: 20px !important;
+}
+
+#korean-quiz-selector-screen .selector-back-btn:hover,
+#korean-tracing-selector-screen .selector-back-btn:hover {
+    transform: translateY(-2px) scale(1.04) !important;
+    background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+}
+
 /* 퀴즈 전체 컨테이너 */
 .korean-quiz-container {
     display: flex;
