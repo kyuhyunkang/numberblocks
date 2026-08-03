@@ -11,20 +11,23 @@ let audioCtx = null;
 
 // ==========================================
 // 🎵 배경음악 (BGM) 순환 플레이리스트 시스템
-// NumberBlocks.mp3 -> NumberBlocks2.mp3 -> NumberBlocks3.mp3 -> 반복
+// NumberBlocks.mp3 -> NumberBlocks2.mp3 -> NumberBlocks3.mp3 -> NumberBlocks4.mp3 -> 반복
 // ==========================================
 const bgmPlaylist = [
     './NumberBlocks.mp3',
     './NumberBlocks2.mp3',
-    './NumberBlocks3.mp3'
+    './NumberBlocks3.mp3',
+    './NumberBlocks4.mp3'
 ];
 let currentBgmIndex = 0;
 
 function getCurrentBgmGain() {
     // NumberBlocks2.mp3 (index 1) 4.5배 강력 증폭
     // NumberBlocks3.mp3 (index 2) 3.5배 음량 증폭 (NumberBlocks.mp3 수치와 동일 수준으로 감상)
+    // NumberBlocks4.mp3 (index 3) 1.0배 음량 (기본 BGM 수치와 동일 수준 감상)
     if (currentBgmIndex === 1) return 4.5;
     if (currentBgmIndex === 2) return 3.5;
+    if (currentBgmIndex === 3) return 1.0;
     return 1.0;
 }
 
