@@ -2117,10 +2117,69 @@ let koreanQuizQuestionIndex = 1; // 세트 내 현재 문제 번호 (1~10)
 let koreanQuizCorrectCount = 0;   // 10문제 중 정답 개수
 let koreanQuizSetTargets = [];    // 10문제 세트 내 중복 없는 정답 셔플 리스트
 
+let currentNameCharIndex = 0;    // 3단계 이름 퀴즈에서 현재 맞추는 글자 위치 (0, 1, 2)
+let currentNameTargetObj = null; // 3단계 선택된 이름 객체 ({ name: '강하성', audio: '...' })
+
 const KOREAN_QUIZ_STAGE1_LETTERS = ['아', '야', '어', '여', '오', '요', '우', '유', '으', '이'];
 const KOREAN_QUIZ_STAGE2_LETTERS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
 // 2단계 보기 생성용 (1단계 모음 10자 + 2단계 자음/가목 14자 융합 풀)
 const KOREAN_QUIZ_ALL_CHOICES_POOL = [...KOREAN_QUIZ_STAGE1_LETTERS, ...KOREAN_QUIZ_STAGE2_LETTERS];
+
+// 3단계 주변 사람 이름 15명 명단 & 전용 음성 파일 경로
+const KOREAN_QUIZ_STAGE3_NAMES = [
+    { name: '강하성', audio: './한글/name/강하성.mp3' },
+    { name: '강규현', audio: './한글/name/강규현.mp3' },
+    { name: '장미', audio: './한글/name/장미.mp3' },
+    { name: '강다윤', audio: './한글/name/강다윤.mp3' },
+    { name: '구하나', audio: './한글/name/구하나.mp3' },
+    { name: '김로운', audio: './한글/name/김로운.mp3' },
+    { name: '김서후', audio: './한글/name/김서후.mp3' },
+    { name: '김세린', audio: './한글/name/김세린.mp3' },
+    { name: '박지온', audio: './한글/name/박지온.mp3' },
+    { name: '이도하', audio: './한글/name/이도하.mp3' },
+    { name: '이준', audio: './한글/name/이준.mp3' },
+    { name: '이해빈', audio: './한글/name/이해빈.mp3' },
+    { name: '전우주', audio: './한글/name/전우주.mp3' },
+    { name: '정하루', audio: './한글/name/전하루.mp3' },
+    { name: '김슬애', audio: './한글/name/김슬애.mp3' }
+];
+
+// 3단계 전용 혼동하기 쉬운 고품질 방해자 선택지 딕셔너리
+const CONFUSING_DISTRACTORS = {
+    '강': ['겅', '감', '랑', '공', '간'],
+    '하': ['허', '호', '나', '한', '학'],
+    '성': ['상', '정', '송', '승', '선'],
+    '규': ['구', '교', '류', '유', '균'],
+    '현': ['한', '형', '헌', '혁', '연'],
+    '장': ['정', '잠', '창', '강', '잔'],
+    '미': ['매', '무', '민', '비', '미'],
+    '다': ['더', '도', '나', '단', '라'],
+    '윤': ['운', '율', '연', '융', '유'],
+    '구': ['규', '국', '누', '두', '군'],
+    '나': ['너', '노', '다', '남', '라'],
+    '김': ['검', '금', '림', '길', '감'],
+    '로': ['러', '루', '모', '노', '론'],
+    '운': ['윤', '웅', '원', '은', '울'],
+    '서': ['사', '소', '너', '석', '선'],
+    '후': ['휴', '훈', '주', '호', '훅'],
+    '세': ['새', '소', '제', '센', '신'],
+    '린': ['림', '란', '민', '린', '림'],
+    '박': ['백', '방', '밖', '각', '반'],
+    '지': ['재', '조', '치', '진', '기'],
+    '온': ['완', '옥', '올', '오', '언'],
+    '이': ['의', '아', '리', '인', '일'],
+    '도': ['더', '두', '모', '돈', '토'],
+    '준': ['진', '중', '줄', '훈', '주'],
+    '해': ['하', '허', '혜', '해', '행'],
+    '빈': ['변', '빔', '민', '반', '신'],
+    '전': ['정', '절', '천', '진', '전'],
+    '우': ['유', '으', '오', '욱', '운'],
+    '주': ['쥬', '죽', '수', '준', '조'],
+    '정': ['장', '종', '전', '청', '정'],
+    '루': ['류', '룩', '무', '누', '룬'],
+    '슬': ['승', '습', '글', '슬', '슬'],
+    '애': ['에', '아', '예', '앵', '애']
+};
 
 function initKoreanQuizMode() {
     const selectorScreen = document.getElementById('korean-quiz-selector-screen');
@@ -2137,8 +2196,15 @@ function startKoreanQuizStage(stageNum) {
     koreanQuizQuestionIndex = 1;
     koreanQuizCorrectCount = 0;
 
-    // 10문제 동안 중복 없이 출제하기 위해 대상 풀을 무작위 셔플하여 10개 선택
-    const targetPool = (currentKoreanQuizStage === 1) ? KOREAN_QUIZ_STAGE1_LETTERS : KOREAN_QUIZ_STAGE2_LETTERS;
+    let targetPool;
+    if (currentKoreanQuizStage === 1) {
+        targetPool = KOREAN_QUIZ_STAGE1_LETTERS;
+    } else if (currentKoreanQuizStage === 2) {
+        targetPool = KOREAN_QUIZ_STAGE2_LETTERS;
+    } else {
+        targetPool = KOREAN_QUIZ_STAGE3_NAMES;
+    }
+
     const shuffledPool = [...targetPool].sort(() => Math.random() - 0.5);
     koreanQuizSetTargets = shuffledPool.slice(0, 10);
 
@@ -2162,34 +2228,50 @@ function generateKoreanQuizQuestion() {
         stageCounter.textContent = koreanQuizQuestionIndex;
     }
 
-    // 1. 정답 글자 선출 (10문제 중복 방지)
-    currentKoreanQuizTarget = koreanQuizSetTargets[koreanQuizQuestionIndex - 1];
-    if (!currentKoreanQuizTarget) {
-        const targetPool = (currentKoreanQuizStage === 1) ? KOREAN_QUIZ_STAGE1_LETTERS : KOREAN_QUIZ_STAGE2_LETTERS;
-        currentKoreanQuizTarget = targetPool[Math.floor(Math.random() * targetPool.length)];
-    }
+    const nameSlotsContainer = document.getElementById('korean-quiz-name-slots-container');
 
-    // 2. 4지선다 보기 배열 생성
-    let availableWrongPool;
-    if (currentKoreanQuizStage === 1) {
-        // 1단계: 1단계 모음(10자) 중 정답 제외 오답 선출
-        availableWrongPool = KOREAN_QUIZ_STAGE1_LETTERS.filter(l => l !== currentKoreanQuizTarget);
+    if (currentKoreanQuizStage === 3) {
+        // 3단계: 이름 찾기 (네모 슬롯 기반)
+        currentNameTargetObj = koreanQuizSetTargets[koreanQuizQuestionIndex - 1];
+        if (!currentNameTargetObj) {
+            currentNameTargetObj = KOREAN_QUIZ_STAGE3_NAMES[Math.floor(Math.random() * KOREAN_QUIZ_STAGE3_NAMES.length)];
+        }
+        currentKoreanQuizTarget = currentNameTargetObj.name;
+        currentNameCharIndex = 0;
+
+        if (nameSlotsContainer) nameSlotsContainer.classList.remove('hidden');
+
+        renderNameSlotsUI();
+        generateNameCharChoices();
     } else {
-        // 2단계: 1단계 모음 + 2단계 가목 융합 풀에서 정답 제외 오답 선출
-        availableWrongPool = KOREAN_QUIZ_ALL_CHOICES_POOL.filter((l, idx, self) => l !== currentKoreanQuizTarget && self.indexOf(l) === idx);
-    }
+        // 1단계, 2단계: 기존 글자 퀴즈
+        if (nameSlotsContainer) nameSlotsContainer.classList.add('hidden');
 
-    // 오답 3개 무작위 추출
-    const wrongChoices = [];
-    const poolCopy = [...availableWrongPool];
-    while (wrongChoices.length < 3 && poolCopy.length > 0) {
-        const rIdx = Math.floor(Math.random() * poolCopy.length);
-        wrongChoices.push(poolCopy.splice(rIdx, 1)[0]);
-    }
+        currentKoreanQuizTarget = koreanQuizSetTargets[koreanQuizQuestionIndex - 1];
+        if (!currentKoreanQuizTarget) {
+            const targetPool = (currentKoreanQuizStage === 1) ? KOREAN_QUIZ_STAGE1_LETTERS : KOREAN_QUIZ_STAGE2_LETTERS;
+            currentKoreanQuizTarget = targetPool[Math.floor(Math.random() * targetPool.length)];
+        }
 
-    // 정답 1개 + 오답 3개 무작위 셔플
-    currentKoreanQuizChoices = [currentKoreanQuizTarget, ...wrongChoices];
-    currentKoreanQuizChoices.sort(() => Math.random() - 0.5);
+        let availableWrongPool;
+        if (currentKoreanQuizStage === 1) {
+            availableWrongPool = KOREAN_QUIZ_STAGE1_LETTERS.filter(l => l !== currentKoreanQuizTarget);
+        } else {
+            availableWrongPool = KOREAN_QUIZ_ALL_CHOICES_POOL.filter((l, idx, self) => l !== currentKoreanQuizTarget && self.indexOf(l) === idx);
+        }
+
+        const wrongChoices = [];
+        const poolCopy = [...availableWrongPool];
+        while (wrongChoices.length < 3 && poolCopy.length > 0) {
+            const rIdx = Math.floor(Math.random() * poolCopy.length);
+            wrongChoices.push(poolCopy.splice(rIdx, 1)[0]);
+        }
+
+        currentKoreanQuizChoices = [currentKoreanQuizTarget, ...wrongChoices];
+        currentKoreanQuizChoices.sort(() => Math.random() - 0.5);
+
+        renderKoreanQuizChoicesUI();
+    }
 
     // 3. UI 및 무작위 넘버블록스 캐릭터(1~50) 렌더링
     const charZone = document.getElementById('korean-quiz-char-zone');
@@ -2201,12 +2283,67 @@ function generateKoreanQuizQuestion() {
         charZone.appendChild(block);
     }
 
-    renderKoreanQuizChoicesUI();
-
     // 4. 음성 자동으로 정답 소리 재생
     setTimeout(() => {
         playKoreanQuizTargetAudio();
     }, 350);
+}
+
+// 3단계 이름 슬롯 ([ 강 ] [ 하 ] [ 성 ]) UI 렌더링
+function renderNameSlotsUI() {
+    const slotsContainer = document.getElementById('korean-quiz-name-slots');
+    if (!slotsContainer || !currentNameTargetObj) return;
+
+    slotsContainer.innerHTML = '';
+    const nameStr = currentNameTargetObj.name;
+
+    for (let i = 0; i < nameStr.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'name-slot-box';
+        slot.dataset.index = i;
+
+        if (i < currentNameCharIndex) {
+            slot.classList.add('filled');
+            slot.textContent = nameStr[i];
+        } else if (i === currentNameCharIndex) {
+            slot.classList.add('active');
+            slot.textContent = '?';
+        } else {
+            slot.textContent = '_';
+        }
+
+        slotsContainer.appendChild(slot);
+    }
+}
+
+// 3단계 현재 음절에 대한 4지선다 혼동 선택지 생성
+function generateNameCharChoices() {
+    if (!currentNameTargetObj) return;
+    const nameStr = currentNameTargetObj.name;
+    const targetChar = nameStr[currentNameCharIndex];
+
+    let distractors = CONFUSING_DISTRACTORS[targetChar] || ['가', '나', '다', '라'];
+    distractors = distractors.filter(c => c !== targetChar);
+
+    const wrongChoices = [];
+    const poolCopy = [...distractors];
+    while (wrongChoices.length < 3 && poolCopy.length > 0) {
+        const rIdx = Math.floor(Math.random() * poolCopy.length);
+        wrongChoices.push(poolCopy.splice(rIdx, 1)[0]);
+    }
+
+    while (wrongChoices.length < 3) {
+        const fallbackPool = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+        const rChar = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+        if (rChar !== targetChar && !wrongChoices.includes(rChar)) {
+            wrongChoices.push(rChar);
+        }
+    }
+
+    currentKoreanQuizChoices = [targetChar, ...wrongChoices];
+    currentKoreanQuizChoices.sort(() => Math.random() - 0.5);
+
+    renderKoreanQuizChoicesUI();
 }
 
 function renderKoreanQuizChoicesUI() {
@@ -2224,66 +2361,167 @@ function renderKoreanQuizChoicesUI() {
 }
 
 function playKoreanQuizTargetAudio() {
-    if (!currentKoreanQuizTarget) return;
-    playKoreanAudio(currentKoreanQuizTarget);
+    if (currentKoreanQuizStage === 3 && currentNameTargetObj) {
+        playNameAudio(currentNameTargetObj);
+    } else if (currentKoreanQuizTarget) {
+        playKoreanAudio(currentKoreanQuizTarget);
+    }
+}
+
+function playNameAudio(nameObj) {
+    if (!soundEnabled || !nameObj) return;
+    const nameStr = typeof nameObj === 'string' ? nameObj : nameObj.name;
+    const audioPath = (typeof nameObj === 'object' && nameObj.audio) 
+        ? nameObj.audio 
+        : `./한글/name/${nameStr}.mp3`;
+
+    const audio = new Audio(audioPath);
+    const vol = (userBgmVolumeRatio > 0 ? userBgmVolumeRatio : 0.8);
+    audio.volume = Math.max(0, Math.min(1.0, vol * 1.3));
+    audio.play().catch(err => {
+        console.log("Name audio error, trying fallback:", err);
+        if (nameStr === '정하루') {
+            const altAudio = new Audio('./한글/name/전하루.mp3');
+            altAudio.volume = Math.max(0, Math.min(1.0, vol * 1.3));
+            altAudio.play().catch(e => console.log("Alt audio error:", e));
+        }
+    });
 }
 
 function onSelectKoreanQuizChoice(selectedLetter, btnEl) {
     if (isKoreanQuizEvaluating) return;
-    isKoreanQuizEvaluating = true;
 
-    const feedbackLayer = document.getElementById('adventure-success-feedback');
-    const blockDisplay = document.getElementById('feedback-block-display');
-    const bubbleText = document.getElementById('feedback-bubble-text');
+    if (currentKoreanQuizStage === 3) {
+        // 3단계: 이름 맞추기 단계별 처리
+        const nameStr = currentNameTargetObj.name;
+        const targetChar = nameStr[currentNameCharIndex];
 
-    if (selectedLetter === currentKoreanQuizTarget) {
-        // 🎉 정답 선택!
-        koreanQuizCorrectCount++;
-        btnEl.classList.add('correct-choice');
-        playSound('success');
-        
-        // 칭찬 음성 & 말풍선 텍스트 턴제 순환 연동 (더하기 빼기 모험과 동일한 칭찬 말풍선 오버레이 출력!)
-        const praise = praiseRotationList[currentPraiseIndex];
-        playGoodJob(praise.audioSrc, praise.gain || 1.0);
-        currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+        if (selectedLetter === targetChar) {
+            // 🎉 한 글자 정답!
+            btnEl.classList.add('correct-choice');
+            playSound('success');
 
-        if (feedbackLayer && bubbleText && blockDisplay) {
-            bubbleText.textContent = praise.text;
-            blockDisplay.innerHTML = '';
-            const randomCharVal = Math.floor(Math.random() * 20) + 1; // 1~20 중 무작위 넘버블록스
-            const rewardBlock = createBlockElement(randomCharVal);
-            blockDisplay.appendChild(rewardBlock);
-            feedbackLayer.classList.remove('hidden');
+            // 해당 슬롯 박스 갱신 (filled 및 완성 연출)
+            currentNameCharIndex++;
+            renderNameSlotsUI();
+
+            if (currentNameCharIndex < nameStr.length) {
+                // 1글자 정답 성공! -> "참 잘했어요!" 토스트 피드백 후 다음 글자 선택지 생성
+                showToastFeedback(`참 잘했어요! '${targetChar}' 🎉`);
+                setTimeout(() => {
+                    btnEl.classList.remove('correct-choice');
+                    generateNameCharChoices();
+                }, 750);
+            } else {
+                // 🎉 이름 전체 완공! (예: 강하성 3글자 모두 완성)
+                isKoreanQuizEvaluating = true;
+                koreanQuizCorrectCount++;
+
+                const feedbackLayer = document.getElementById('adventure-success-feedback');
+                const blockDisplay = document.getElementById('feedback-block-display');
+                const bubbleText = document.getElementById('feedback-bubble-text');
+
+                // 칭찬 음성 & 말풍선 (예: Excellent! 강하성! 🔥)
+                const praise = praiseRotationList[currentPraiseIndex];
+                playGoodJob(praise.audioSrc, praise.gain || 1.0);
+                currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+                if (feedbackLayer && bubbleText && blockDisplay) {
+                    bubbleText.textContent = `Excellent! ${nameStr}! 🔥`;
+                    blockDisplay.innerHTML = '';
+                    const randomCharVal = Math.floor(Math.random() * 20) + 1;
+                    const rewardBlock = createBlockElement(randomCharVal);
+                    blockDisplay.appendChild(rewardBlock);
+                    feedbackLayer.classList.remove('hidden');
+                }
+
+                triggerConfetti();
+
+                setTimeout(() => {
+                    btnEl.classList.remove('correct-choice');
+                    if (feedbackLayer) feedbackLayer.classList.add('hidden');
+                    advanceKoreanQuizNextStep();
+                }, 2200);
+            }
+        } else {
+            // ❌ 오답 선택!
+            btnEl.classList.add('wrong-choice');
+            playSound('wrong');
+
+            setTimeout(() => {
+                btnEl.classList.remove('wrong-choice');
+            }, 1000);
         }
-
-        triggerConfetti();
-
-        // 2.2초 후 말풍선 레이어 닫고 다음 문제 진행
-        setTimeout(() => {
-            btnEl.classList.remove('correct-choice');
-            if (feedbackLayer) feedbackLayer.classList.add('hidden');
-            advanceKoreanQuizNextStep();
-        }, 2200);
     } else {
-        // ❌ 오답 선택! (더하기 빼기 모험과 동일하게 틀린 피드백 주고 다음 문제 진행)
-        btnEl.classList.add('wrong-choice');
-        playSound('wrong');
+        // 1단계, 2단계 기존 글자 퀴즈 로직
+        isKoreanQuizEvaluating = true;
+        const feedbackLayer = document.getElementById('adventure-success-feedback');
+        const blockDisplay = document.getElementById('feedback-block-display');
+        const bubbleText = document.getElementById('feedback-bubble-text');
 
-        if (feedbackLayer && bubbleText && blockDisplay) {
-            bubbleText.textContent = `아쉬워요! 정답은 '${currentKoreanQuizTarget}'입니다. 😢`;
-            blockDisplay.innerHTML = '';
-            const randomCharVal = Math.floor(Math.random() * 20) + 1;
-            const sadBlock = createBlockElement(randomCharVal);
-            sadBlock.classList.add('sad-face'); // 😢 슬픈 표정 블록!
-            blockDisplay.appendChild(sadBlock);
-            feedbackLayer.classList.remove('hidden');
+        if (selectedLetter === currentKoreanQuizTarget) {
+            // 🎉 정답 선택!
+            koreanQuizCorrectCount++;
+            btnEl.classList.add('correct-choice');
+            playSound('success');
+            
+            // 칭찬 음성 & 말풍선 텍스트 턴제 순환 연동 (더하기 빼기 모험과 동일한 칭찬 말풍선 오버레이 출력!)
+            const praise = praiseRotationList[currentPraiseIndex];
+            playGoodJob(praise.audioSrc, praise.gain || 1.0);
+            currentPraiseIndex = (currentPraiseIndex + 1) % praiseRotationList.length;
+
+            if (feedbackLayer && bubbleText && blockDisplay) {
+                bubbleText.textContent = praise.text;
+                blockDisplay.innerHTML = '';
+                const randomCharVal = Math.floor(Math.random() * 20) + 1; // 1~20 중 무작위 넘버블록스
+                const rewardBlock = createBlockElement(randomCharVal);
+                blockDisplay.appendChild(rewardBlock);
+                feedbackLayer.classList.remove('hidden');
+            }
+
+            triggerConfetti();
+
+            // 2.2초 후 말풍선 레이어 닫고 다음 문제 진행
+            setTimeout(() => {
+                btnEl.classList.remove('correct-choice');
+                if (feedbackLayer) feedbackLayer.classList.add('hidden');
+                advanceKoreanQuizNextStep();
+            }, 2200);
+        } else {
+            // ❌ 오답 선택! (더하기 빼기 모험과 동일하게 틀린 피드백 주고 다음 문제 진행)
+            btnEl.classList.add('wrong-choice');
+            playSound('wrong');
+
+            if (feedbackLayer && bubbleText && blockDisplay) {
+                bubbleText.textContent = `아쉬워요! 정답은 '${currentKoreanQuizTarget}'입니다. 😢`;
+                blockDisplay.innerHTML = '';
+                const randomCharVal = Math.floor(Math.random() * 20) + 1;
+                const sadBlock = createBlockElement(randomCharVal);
+                sadBlock.classList.add('sad-face'); // 😢 슬픈 표정 블록!
+                blockDisplay.appendChild(sadBlock);
+                feedbackLayer.classList.remove('hidden');
+            }
+
+            setTimeout(() => {
+                btnEl.classList.remove('wrong-choice');
+                if (feedbackLayer) feedbackLayer.classList.add('hidden');
+                advanceKoreanQuizNextStep();
+            }, 2200);
         }
+    }
+}
 
+function showToastFeedback(msg) {
+    const feedback = document.getElementById('korean-tracing-feedback');
+    if (feedback) {
+        feedback.textContent = msg;
+        feedback.style.animation = 'none';
+        void feedback.offsetWidth;
+        feedback.style.animation = '';
+        feedback.classList.remove('hidden');
         setTimeout(() => {
-            btnEl.classList.remove('wrong-choice');
-            if (feedbackLayer) feedbackLayer.classList.add('hidden');
-            advanceKoreanQuizNextStep();
-        }, 2200);
+            feedback.classList.add('hidden');
+        }, 1200);
     }
 }
 

@@ -2481,6 +2481,84 @@ main {
     backdrop-filter: none !important;
 }
 
+/* 3단계 🔥 이름 찾기 카드 (네온 파이어 3D 그래디언트) */
+.korean-quiz-diff-btn[data-stage="3"] {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important;
+    box-shadow: 0 8px 20px rgba(255, 65, 108, 0.35), 0 4px 0 #cc113b !important;
+}
+
+.korean-quiz-diff-btn[data-stage="3"] .diff-title {
+    color: #ffffff !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.korean-quiz-diff-btn[data-stage="3"] .diff-info {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+}
+
+/* 🏷️ 한글 찾기 3단계 전용 이름 슬롯 스타일 */
+.korean-name-slots-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 12px 0 16px 0 !important;
+    width: 100% !important;
+}
+
+.korean-name-slots {
+    display: flex !important;
+    gap: 14px !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.name-slot-box {
+    width: 70px !important;
+    height: 70px !important;
+    border-radius: 20px !important;
+    border: 3.5px dashed #cbd5e1 !important;
+    background: #ffffff !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 34px !important;
+    font-weight: 800 !important;
+    color: #94a3b8 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.name-slot-box.active {
+    border: 4px solid #3b82f6 !important;
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35) !important;
+    transform: scale(1.08) !important;
+    animation: slotPulse 1.2s infinite alternate !important;
+}
+
+.name-slot-box.filled {
+    border: 3.5px solid #22c55e !important;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 8px 18px rgba(34, 197, 94, 0.4) !important;
+    transform: scale(1.05) !important;
+}
+
+@keyframes slotPulse {
+    0% { transform: scale(1.04); }
+    100% { transform: scale(1.12); }
+}
+
 /* 🏠 메인 홈으로 버튼 돋보이게 개선 */
 #korean-tracing-selector-screen .selector-back-btn {
     background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;

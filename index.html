@@ -309,12 +309,16 @@
                     
                     <div class="diff-btn-group">
                         <button class="korean-quiz-diff-btn diff-btn" data-stage="1">
-                            <span class="diff-title">1단계 🌱 (기초 모음)</span>
-                            <span class="diff-info">아, 야, 어, 여, 오, 요, 우, 유, 으, 이</span>
+                            <span class="diff-title">1단계 🌱</span>
+                            <span class="diff-info">기초 모음 (아 ~ 이 10자)</span>
                         </button>
                         <button class="korean-quiz-diff-btn diff-btn" data-stage="2">
-                            <span class="diff-title">2단계 🌟 (기초 자음)</span>
-                            <span class="diff-info">가~하 소리 듣고 찾기</span>
+                            <span class="diff-title">2단계 🌟</span>
+                            <span class="diff-info">기초 자음 (가 ~ 하 14자)</span>
+                        </button>
+                        <button class="korean-quiz-diff-btn diff-btn" data-stage="3">
+                            <span class="diff-title">3단계 🔥</span>
+                            <span class="diff-info">이름 찾기 (주변 사람 이름 15명)</span>
                         </button>
                     </div>
                     
@@ -339,6 +343,11 @@
                                 <span class="speaker-icon">🔊</span>
                                 <span class="replay-text">소리 다시 듣기</span>
                             </button>
+                        </div>
+
+                        <!-- 3단계 전용 이름 글자 슬롯 영역 ([ 강 ] [ 하 ] [ 성 ]) -->
+                        <div id="korean-quiz-name-slots-container" class="korean-name-slots-container hidden">
+                            <div id="korean-quiz-name-slots" class="korean-name-slots"></div>
                         </div>
 
                         <!-- 4지선다형 카드 버튼 그리드 -->
