@@ -3185,30 +3185,32 @@ main {
     .korean-tracing-diff-btn,
     .korean-quiz-diff-btn,
     .diff-btn {
-        padding: 14px 18px !important;
+        padding: 14px 20px !important;
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
-        justify-content: center !important;
-        gap: 4px !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
         width: 100% !important;
         box-sizing: border-box !important;
-        text-align: center !important;
+        text-align: left !important;
     }
 
     .korean-tracing-diff-btn .diff-title,
     .korean-quiz-diff-btn .diff-title,
     .diff-btn .diff-title {
-        font-size: 19px !important;
+        font-size: 18px !important;
     }
 
     .korean-tracing-diff-btn .diff-info,
     .korean-quiz-diff-btn .diff-info,
     .diff-btn .diff-info {
-        font-size: 13px !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border-radius: 0 !important;
+        font-size: 12px !important;
+        padding: 4px 10px !important;
+        background: rgba(255, 255, 255, 0.25) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(4px) !important;
+        white-space: nowrap !important;
     }
 
     .screen {
