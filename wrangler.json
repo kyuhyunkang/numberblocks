@@ -1,6 +1,7 @@
 {
   "name": "numberblocks",
   "compatibility_date": "2026-07-25",
+  "main": "index.js",
   "assets": {
     "directory": "./"
   }
